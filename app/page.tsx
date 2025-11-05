@@ -20,8 +20,8 @@ export default function home(){
           className="w-[320px] h-auto md:w-[600px] md:h-auto"
           
          />
-         <h1 className="text-lg text-center w-80 md:w-[800px] md:text-2xl mt-5">We’ve been baking something special. And it’s finally ready to meet you.</h1>
-         <h1 className="text-lg  md:text-2xl mt-3">Launching this <span className="underline">December.</span></h1>
+         <h1 className="text-lg text-white text-center w-80 md:w-[800px] md:text-2xl mt-5">We’ve been baking something special. And it’s finally ready to meet you.</h1>
+         <h1 className="text-lg text-white md:text-2xl mt-3">Launching this <span className="underline">December.</span></h1>
          <a href="https://tally.so/r/QK2eZA" target="_blank" rel="noopener noreferrer"><button className="w-40 h-12 bg-black text-white font-semibold mt-8 md:mt-10 rounded-xl cursor-pointer">Get Early Access</button></a>
       </section>
       <Footer/>
