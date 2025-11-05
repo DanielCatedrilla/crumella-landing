@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   title: "Crumella",
   description: "Made to remember",
   icons:{
-    icon: "/favicon.png"
+    icon: "/favicon2.png"
   }
 };
 
