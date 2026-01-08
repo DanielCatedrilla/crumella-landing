@@ -1,23 +1,27 @@
 import React from "react";
 import Image from "next/image";
+import Link from "next/link";
 
-type MenuItem = {
+export type MenuItem = {
     id: number;
     name: string;
-    description: string;
+    description?: string;
     src: string;
     badge?: string;
     logoSrc?: string;
+    category?: string;
+    price?: number;
 };
 
-const MENU_ITEMS: MenuItem[] = [
+export const MENU_ITEMS: MenuItem[] = [
     {
         id: 1,
-        name: "Biscoff Cookie",
-        description: "Made with Lotus Biscoff, this cookie delivers a rich caramelized flavor with warm, spiced notes in every bite.",
-        src: "/MENU2/BC.png", // ENTER YOUR PHOTO PATH HERE
+        name: "Biscoff® Cookie",
+        description: "Made with Lotus Biscoff®, this cookie delivers a rich caramelized flavor with warm, spiced notes in every bite.",
+        src: "/MENU2/BC.png",
         badge: "New Flavor",
-        logoSrc: "/BiscoffLogo2.jpg", // ENTER LOGO PATH HERE
+        logoSrc: "/BiscoffLogo2.jpg",
+        category: "Single Flavors",
     },
     {
         id: 2,
@@ -25,25 +29,29 @@ const MENU_ITEMS: MenuItem[] = [
         description: "A refined balance of earthy matcha and subtle sweetness, baked into a soft, flavorful cookie that’s calm, elegant, and deeply satisfying.",
         src: "/MENU2/MC.png",
         badge: "New Flavor",
+        category: "Single Flavors",
     },
     {
         id: 3,
         name: "Chocolate Chunk Cookie",
         description: "Classic and timeless, this cookie features generous chunks of premium chocolate baked into a soft, chewy base.",
         src: "/MENU2/CCH.png",
-        badge: "All time favorite"
+        badge: "All time favorite",
+        category: "Single Flavors",
     },
     {
         id: 4,
         name: "Double Chocolate Cookie",
         description: "For those who love it rich, this cookie blends a chocolate base with melted chocolate pieces for a deep, indulgent bite that doesn’t hold back.",
         src: "/MENU2/DCH.png",
+        category: "Single Flavors",
     },
     {
         id: 5,
         name: "S'mores Cookie",
         description: "Inspired by the classic treat, this cookie combines chocolate, a soft marshmallow center, and a golden base.",
         src: "/MENU2/SM.png",
+        category: "Single Flavors",
     },
     {
         id: 6,
@@ -51,6 +59,72 @@ const MENU_ITEMS: MenuItem[] = [
         description: "A soft red velvet cookie with a creamy cream cheese filling inside.",
         src: "/MENU2/RV.png",
         badge: "Best Seller",
+        category: "Single Flavors",
+    },
+];
+
+export const ORDER_ITEMS: MenuItem[] = [
+    {
+        id: 1,
+        name: "Biscoff® Cookie",
+        badge: "New flavor",
+        src: "/CS/Biscoff.png",
+        category: "Single Flavor Bundles",
+        price: 350.00,
+    },
+    {
+        id: 2,
+        name: "Matcha Cookie",
+        badge: "New flavor",
+        src: "/CS/Matcha.png",
+        category: "Single Flavor Bundles",
+        price: 350.00,
+    },
+    {
+        id: 3,
+        name: "Chocolate Chunk Cookie",
+        badge: "All time favorite",
+        src: "/CS/CCH.png",
+        category: "Single Flavor Bundles",
+        price: 300.00,
+    },
+    {
+        id: 4,
+        name: "Double Chocolate Cookie",
+        src: "/CS/DCH.png",
+        category: "Single Flavor Bundles",
+        price: 320.00,
+    },
+    {
+        id: 5,
+        name: "S'mores Cookie",
+        src: "/CS/SM.png",
+        category: "Single Flavor Bundles",
+        price: 320.00,
+    },
+    {
+        id: 6,
+        name: "Red Velvet Cookie",
+        badge: "Best seller",
+        src: "/CS/RV.png",
+        category: "Single Flavor Bundles",
+        price: 380.00,
+    },
+    {
+        id: 7,
+        name: "Classic Assorted Bundle",
+        badge: "Best seller",
+        src: "/CS/CA.png",
+        category: "Assorted Bundles",
+        price: 350.00,
+    },
+    {
+        id: 8,
+        name: "Premium Assorted Bundle",
+        badge: "New bundle",
+        src: "/CS/PA.png",
+        category: "Assorted Bundles",
+        price: 380.00,
     },
 ];
 
@@ -63,7 +137,7 @@ export default function Menu(){
 
             <div className="max-w-6xl mx-auto px-4 relative z-10">
                 <div className="flex flex-col items-center justify-center mb-20 text-center">
-                    <span className="text-[#a7dff4] font-bold tracking-widest uppercase mb-3">Freshly Baked</span>
+                    <span className="text-gray-500 font-bold tracking-widest uppercase mb-3">Freshly Baked</span>
                     <h1 className="text-black text-6xl md:text-7xl font-extrabold tracking-tight mb-6">
                         Our Menu<span className="text-[#a7dff4]">.</span>
                     </h1>
@@ -108,15 +182,13 @@ export default function Menu(){
                                     </span>
                                 )}
                                 <h3 className="text-5xl md:text-6xl font-black italic tracking-tighter mb-4 text-black">{item.name}</h3>
-                                <p className="text-gray-600 text-lg mb-8 leading-relaxed group-hover:text-gray-900 font-medium transition-colors duration-300">
+                                <p className="text-gray-800 text-lg mb-8 leading-relaxed group-hover:text-gray-900 font-medium transition-colors duration-300">
                                     {item.description}
                                 </p>
                                 <div className="flex flex-col md:flex-row items-center gap-6">
-                                    <a href="https://tally.so/r/Npq8o0" target="_blank" rel="noopener noreferrer">
-                                    <button className="bg-black text-white px-10 py-4 rounded-full font-bold text-lg shadow-lg hover:bg-white hover:text-black hover:scale-105 transition-all duration-300 cursor-pointer">
+                                    <Link href="/order" className="bg-black text-white px-10 py-4 rounded-full font-bold text-lg shadow-lg hover:bg-white hover:text-black hover:scale-105 transition-all duration-300 cursor-pointer">
                                         Order Now
-                                    </button>
-                                    </a>
+                                    </Link>
                                 </div>
                             </div>
                         </div>

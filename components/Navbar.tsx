@@ -21,11 +21,9 @@ export default function Navbar() {
 
         </div>
 
-        <a href="https://tally.so/r/Npq8o0" target="_blank" rel="noopener noreferrer">
-       <button className="bg-black text-white px-8 py-3 rounded-full font-bold text-lg shadow-md hover:bg-gray-900 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
+        <Link href="/order" className="bg-black text-white px-8 py-3 rounded-full font-bold text-lg shadow-md hover:bg-gray-900 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
           Order Now
-        </button>
-        </a>
+        </Link>
 
       </div>
     </nav>
