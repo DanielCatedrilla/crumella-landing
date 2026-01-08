@@ -69,7 +69,7 @@ export const ORDER_ITEMS: MenuItem[] = [
         name: "Biscoff® Cookie",
         badge: "New flavor",
         src: "/CS/Biscoff.png",
-        category: "Single Flavor Bundles",
+        category: "Box of 4 - Single Flavor Bundles",
         price: 350.00,
     },
     {
@@ -77,7 +77,7 @@ export const ORDER_ITEMS: MenuItem[] = [
         name: "Matcha Cookie",
         badge: "New flavor",
         src: "/CS/Matcha.png",
-        category: "Single Flavor Bundles",
+        category: "Box of 4 - Single Flavor Bundles",
         price: 350.00,
     },
     {
@@ -85,21 +85,21 @@ export const ORDER_ITEMS: MenuItem[] = [
         name: "Chocolate Chunk Cookie",
         badge: "All time favorite",
         src: "/CS/CCH.png",
-        category: "Single Flavor Bundles",
+        category: "Box of 4 - Single Flavor Bundles",
         price: 300.00,
     },
     {
         id: 4,
         name: "Double Chocolate Cookie",
         src: "/CS/DCH.png",
-        category: "Single Flavor Bundles",
+        category: "Box of 4 - Single Flavor Bundles",
         price: 320.00,
     },
     {
         id: 5,
         name: "S'mores Cookie",
         src: "/CS/SM.png",
-        category: "Single Flavor Bundles",
+        category: "Box of 4 - Single Flavor Bundles",
         price: 320.00,
     },
     {
@@ -107,7 +107,7 @@ export const ORDER_ITEMS: MenuItem[] = [
         name: "Red Velvet Cookie",
         badge: "Best seller",
         src: "/CS/RV.png",
-        category: "Single Flavor Bundles",
+        category: "Box of 4 - Single Flavor Bundles",
         price: 380.00,
     },
     {
@@ -115,7 +115,7 @@ export const ORDER_ITEMS: MenuItem[] = [
         name: "Classic Assorted Bundle",
         badge: "Best seller",
         src: "/CS/CA.png",
-        category: "Assorted Bundles",
+        category: "Box of 4 - Assorted Bundles",
         price: 350.00,
     },
     {
@@ -123,7 +123,7 @@ export const ORDER_ITEMS: MenuItem[] = [
         name: "Premium Assorted Bundle",
         badge: "New bundle",
         src: "/CS/PA.png",
-        category: "Assorted Bundles",
+        category: "Box of 4 - Assorted Bundles",
         price: 380.00,
     },
 ];
