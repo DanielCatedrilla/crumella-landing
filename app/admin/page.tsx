@@ -12,17 +12,36 @@ export default function AdminPage() {
   const [password, setPassword] = useState("");
 
   useEffect(() => {
+    const storedAuth = localStorage.getItem("adminAuthenticated");
+    if (storedAuth === "true") {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  useEffect(() => {
     if (isAuthenticated) {
       fetchOrders();
       fetchVouchers();
+
+      const channel = supabase
+        .channel('realtime orders')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+          fetchOrders(true);
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [isAuthenticated]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    const adminSecret = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "admin123";
-    if (password === adminSecret) {
+    const adminSecret = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+    if (adminSecret && password === adminSecret) {
       setIsAuthenticated(true);
+      localStorage.setItem("adminAuthenticated", "true");
     } else {
       alert("Incorrect password");
     }
@@ -31,10 +50,11 @@ export default function AdminPage() {
   const handleLogout = () => {
     setIsAuthenticated(false);
     setPassword("");
+    localStorage.removeItem("adminAuthenticated");
   };
 
-  const fetchOrders = async () => {
-    setLoading(true);
+  const fetchOrders = async (background = false) => {
+    if (!background) setLoading(true);
     const { data, error } = await supabase
       .from('orders')
       .select('*')
@@ -81,7 +101,22 @@ export default function AdminPage() {
     if (error) {
       alert("Error updating status");
     } else {
-      fetchOrders(); // Refresh list to show new status
+      fetchOrders(true); // Refresh list to show new status
+    }
+  };
+
+  const deleteOrder = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this order? This action cannot be undone.")) return;
+
+    const { error } = await supabase
+      .from('orders')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      alert("Error deleting order");
+    } else {
+      setOrders((prev) => prev.filter((order) => order.id !== id));
     }
   };
 
@@ -238,8 +273,11 @@ export default function AdminPage() {
                 {orders.map((order) => (
                   <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                     <td className="p-4 text-gray-700 whitespace-nowrap">
-                      {new Date(order.createdAt).toLocaleDateString()} <br/>
-                      <span className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleTimeString()}</span>
+                      {order.status === 'New' && (
+                        <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold mb-1 inline-block animate-pulse">NEW</span>
+                      )}
+                      <div>{new Date(order.createdAt).toLocaleDateString()}</div>
+                      <div className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleTimeString()}</div>
                     </td>
                     <td className="p-4">
                       <div className="font-bold text-black">{order.customer.name}</div>
@@ -281,7 +319,14 @@ export default function AdminPage() {
                       {order.paymentMethod === 'gcash' ? 'GCash' : order.paymentMethod === 'bank' ? 'Bank Transfer' : 'Cash'}
                     </td>
                     <td className="p-4 font-bold text-black whitespace-nowrap">
-                      ₱{order.finalTotal?.toFixed(2)}
+                      <div>₱{order.finalTotal?.toFixed(2)}</div>
+                      {order.voucherCode && (
+                        <div className="mt-1">
+                          <span className="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded border border-green-200 inline-flex items-center gap-1">
+                            🏷️ {order.voucherCode}
+                          </span>
+                        </div>
+                      )}
                     </td>
                     <td className="p-4">
                       {order.proofUrl ? (
@@ -326,6 +371,12 @@ export default function AdminPage() {
                       >
                         Print Ticket
                       </button>
+                      <button 
+                        onClick={() => deleteOrder(order.id)}
+                        className="flex items-center justify-center gap-2 w-full bg-red-50 text-red-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors"
+                      >
+                        Delete
+                      </button>
                       </div>
                     </td>
                   </tr>
@@ -346,6 +397,9 @@ export default function AdminPage() {
             <div key={order.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-4">
               <div className="flex justify-between items-start">
                 <div>
+                  {order.status === 'New' && (
+                    <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold mb-2 inline-block animate-pulse">NEW</span>
+                  )}
                   <div className="text-xs text-gray-600 font-bold">
                     {new Date(order.createdAt).toLocaleDateString()} • {new Date(order.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                   </div>
@@ -399,6 +453,12 @@ export default function AdminPage() {
                 <div>
                    <div className="text-xs text-gray-600 capitalize">{order.paymentMethod === 'gcash' ? 'GCash' : order.paymentMethod === 'bank' ? 'Bank Transfer' : 'Cash'}</div>
                    <div className="font-black text-lg">₱{order.finalTotal?.toFixed(2)}</div>
+                   {order.voucherCode && (
+                      <div className="text-xs text-green-600 font-bold mt-1 flex items-center gap-1">
+                        <span>🏷️ {order.voucherCode}</span>
+                        <span className="text-green-500 font-medium">(-₱{order.discount?.toFixed(2)})</span>
+                      </div>
+                   )}
                 </div>
                 {order.proofUrl && (
                    <a href={order.proofUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-xs font-bold hover:underline">
@@ -429,6 +489,12 @@ export default function AdminPage() {
                     className="w-full bg-gray-900 text-white px-3 py-2 rounded-xl text-sm font-bold"
                  >
                     Print
+                 </button>
+                 <button 
+                    onClick={() => deleteOrder(order.id)}
+                    className="col-span-2 w-full bg-red-50 text-red-600 px-3 py-2 rounded-xl text-sm font-bold hover:bg-red-100 transition-colors"
+                 >
+                    Delete Order
                  </button>
               </div>
             </div>

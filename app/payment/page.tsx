@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import VoucherInput from "../../components/VoucherInput";
 import { supabase } from "../../components/supabase";
 
 export default function PaymentPage() {
@@ -10,7 +11,6 @@ export default function PaymentPage() {
   const [paymentMethod, setPaymentMethod] = useState<string>("cash");
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [voucherCode, setVoucherCode] = useState("");
-  const [voucherMessage, setVoucherMessage] = useState<{type: 'error' | 'success', text: string} | null>(null);
   const [discount, setDiscount] = useState(0);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -25,57 +25,6 @@ export default function PaymentPage() {
       router.push("/order");
     }
   }, [router]);
-
-  const handleApplyVoucher = () => {
-    setVoucherMessage(null);
-    setDiscount(0);
-
-    // 1. Check Expiration
-    const expirationDate = new Date('2026-01-31T23:59:59');
-    const now = new Date();
-    if (now > expirationDate) {
-        setVoucherMessage({ type: 'error', text: "This voucher has expired." });
-        return;
-    }
-
-    // 2. Check Format (2025-XX or 2025-XXX)
-    const regex = /^2025-(\d{2,3})$/;
-    const match = voucherCode.match(regex);
-
-    if (!match) {
-         setVoucherMessage({ type: 'error', text: "Invalid voucher code format." });
-         return;
-    }
-
-    const suffix = match[1];
-    const num = parseInt(suffix, 10);
-
-    // Validate Range (1 to 100)
-    if (num < 1 || num > 100) {
-        setVoucherMessage({ type: 'error', text: "Invalid voucher code." });
-        return;
-    }
-
-    // Validate Strict Formatting (01-09, 10-99, 100)
-    let expectedSuffix = num.toString();
-    if (num < 10) expectedSuffix = "0" + num;
-    
-    if (suffix !== expectedSuffix) {
-         setVoucherMessage({ type: 'error', text: "Invalid voucher code format." });
-         return;
-    }
-
-    // 3. Check if Used (Mock Data)
-    const usedVouchers = ['2025-22', '2025-50']; // Example used vouchers
-    if (usedVouchers.includes(voucherCode)) {
-        setVoucherMessage({ type: 'error', text: "This voucher has already been used." });
-        return;
-    }
-
-    // Success
-    setDiscount(50.00); // Applying a flat $50 discount
-    setVoucherMessage({ type: 'success', text: "Voucher applied! ₱50.00 off." });
-  };
 
   const handleConfirmPayment = async () => {
     if ((paymentMethod === 'gcash' || paymentMethod === 'bank') && !proofFile) {
@@ -110,7 +59,7 @@ export default function PaymentPage() {
             voucherCode: discount > 0 ? voucherCode : null,
             discount,
             finalTotal,
-            status: "Pending",
+            status: "New",
             createdAt: new Date().toISOString(),
         };
 
@@ -118,6 +67,14 @@ export default function PaymentPage() {
         const { error: insertError } = await supabase.from('orders').insert([orderData]);
 
         if (insertError) throw insertError;
+
+        // 4. Increment Voucher Usage
+        if (discount > 0 && voucherCode) {
+          const { data: v } = await supabase.from('vouchers').select('id, used_count').eq('code', voucherCode).single();
+          if (v) {
+            await supabase.from('vouchers').update({ used_count: v.used_count + 1 }).eq('id', v.id);
+          }
+        }
 
         // 4. Cleanup & Redirect
         localStorage.removeItem("latestOrder");
@@ -162,26 +119,13 @@ export default function PaymentPage() {
           {/* Voucher Section */}
           <div className="mb-8 md:mb-10 bg-gray-50 p-4 md:p-6 rounded-2xl border border-gray-100">
             <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Have a Voucher?</label>
-            <div className="flex flex-col sm:flex-row gap-3">
-                <input 
-                    type="text" 
-                    placeholder="Enter voucher code" 
-                    className="flex-1 px-4 md:px-5 py-3 rounded-xl bg-white border-2 border-transparent focus:border-black outline-none transition-all text-black placeholder:text-gray-400 font-medium"
-                    value={voucherCode}
-                    onChange={(e) => setVoucherCode(e.target.value)}
-                />
-                <button 
-                    onClick={handleApplyVoucher}
-                    className="bg-black text-white px-6 py-3 rounded-xl font-bold hover:bg-gray-800 transition-colors w-full sm:w-auto"
-                >
-                    Apply
-                </button>
-            </div>
-            {voucherMessage && (
-                <p className={`text-sm mt-3 font-bold ${voucherMessage.type === 'error' ? 'text-red-500' : 'text-green-600'}`}>
-                    {voucherMessage.text}
-                </p>
-            )}
+            <VoucherInput 
+              cartTotal={order.total} 
+              onApply={(amount, code) => {
+                setDiscount(amount);
+                setVoucherCode(code);
+              }} 
+            />
           </div>
 
           <div className="space-y-6">

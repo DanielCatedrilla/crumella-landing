@@ -85,7 +85,7 @@ export default function OrderPage() {
         return { name: item?.name, quantity: qty };
       }),
       total: totalPrice,
-      status: "New"
+      status: "New",
     };
 
     localStorage.setItem("latestOrder", JSON.stringify(orderData));
