@@ -31,13 +31,13 @@ const MENU_ITEMS: MenuItem[] = [
         name: "Chocolate Chunk Cookie",
         description: "Classic and timeless, this cookie features generous chunks of premium chocolate baked into a soft, chewy base.",
         src: "/MENU2/CCH.png",
+        badge: "All time favorite"
     },
     {
         id: 4,
         name: "Double Chocolate Cookie",
         description: "For those who love it rich, this cookie blends a chocolate base with melted chocolate pieces for a deep, indulgent bite that doesn’t hold back.",
         src: "/MENU2/DCH.png",
-        badge: "Best Seller",
     },
     {
         id: 5,
@@ -50,6 +50,7 @@ const MENU_ITEMS: MenuItem[] = [
         name: "Red Velvet Cookie",
         description: "A soft red velvet cookie with a creamy cream cheese filling inside.",
         src: "/MENU2/RV.png",
+        badge: "Best Seller",
     },
 ];
 
