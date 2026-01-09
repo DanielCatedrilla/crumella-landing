@@ -8,7 +8,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [vouchers, setVouchers] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'orders' | 'vouchers'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'vouchers' | 'statistics'>('orders');
   const [password, setPassword] = useState("");
 
   useEffect(() => {
@@ -35,6 +35,54 @@ export default function AdminPage() {
       };
     }
   }, [isAuthenticated]);
+
+  const stats = React.useMemo(() => {
+    if (!orders.length) return { monthly: [], bestSeller: null, totalBoxes: 0 };
+
+    const monthlyMap: Record<string, { count: number; revenue: number }> = {};
+    const productMap: Record<string, number> = {};
+    let totalBoxes = 0;
+
+    orders.forEach((order) => {
+      // Monthly Stats
+      const d = new Date(order.createdAt);
+      const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      
+      if (!monthlyMap[monthKey]) monthlyMap[monthKey] = { count: 0, revenue: 0 };
+      monthlyMap[monthKey].count += 1;
+      monthlyMap[monthKey].revenue += (Number(order.finalTotal) || 0);
+
+      // Product Stats
+      if (Array.isArray(order.items)) {
+        order.items.forEach((item: any) => {
+          const qty = Number(item.quantity) || 0;
+          productMap[item.name] = (productMap[item.name] || 0) + qty;
+          totalBoxes += qty;
+        });
+      }
+    });
+
+    const monthly = Object.entries(monthlyMap)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, data]) => {
+        const [year, month] = key.split('-');
+        const date = new Date(parseInt(year), parseInt(month) - 1);
+        return {
+          label: date.toLocaleString('default', { month: 'short', year: '2-digit' }),
+          count: data.count,
+          revenue: data.revenue,
+        };
+      });
+
+    let bestSeller = { name: 'No sales yet', count: 0 };
+    Object.entries(productMap).forEach(([name, count]) => {
+      if (count > bestSeller.count) {
+        bestSeller = { name, count };
+      }
+    });
+
+    return { monthly, bestSeller, totalBoxes };
+  }, [orders]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,6 +175,36 @@ export default function AdminPage() {
 
     if (error) {
       alert("Error updating payment method");
+    } else {
+      fetchOrders(true);
+    }
+  };
+
+  const updateOrderTotal = async (id: number, newTotal: number, currentCustomer: any, currentOrderTotal: number) => {
+    let originalTotal = currentCustomer.originalTotal;
+
+    if (originalTotal === undefined && !currentCustomer.isManualDiscount) {
+      originalTotal = currentOrderTotal;
+    }
+
+    const isBackToOriginal = originalTotal !== undefined && newTotal === originalTotal;
+    const updatedCustomer = { ...currentCustomer };
+
+    if (isBackToOriginal) {
+      updatedCustomer.isManualDiscount = false;
+      delete updatedCustomer.originalTotal;
+    } else {
+      updatedCustomer.isManualDiscount = true;
+      if (originalTotal !== undefined) updatedCustomer.originalTotal = originalTotal;
+    }
+
+    const { error } = await supabase
+      .from('orders')
+      .update({ finalTotal: newTotal, customer: updatedCustomer })
+      .eq('id', id);
+
+    if (error) {
+      alert("Error updating total");
     } else {
       fetchOrders(true);
     }
@@ -276,6 +354,12 @@ export default function AdminPage() {
           >
             Vouchers
           </button>
+          <button 
+            onClick={() => setActiveTab('statistics')}
+            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeTab === 'statistics' ? 'bg-black text-white' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
+          >
+            Statistics
+          </button>
         </div>
 
         {activeTab === 'orders' ? (
@@ -363,7 +447,33 @@ export default function AdminPage() {
                       </select>
                     </td>
                     <td className="p-4 font-bold text-black whitespace-nowrap">
-                      <div>₱{order.finalTotal?.toFixed(2)}</div>
+                      <div className="flex items-center gap-1 relative group">
+                        {order.customer.isManualDiscount && order.customer.originalTotal && (
+                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 shadow-lg">
+                            Original: ₱{Number(order.customer.originalTotal).toFixed(2)}
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                          </div>
+                        )}
+                        <span>₱</span>
+                        <input 
+                          key={order.finalTotal}
+                          type="number" 
+                          step="0.01"
+                          defaultValue={order.finalTotal}
+                          onBlur={(e) => {
+                            const val = parseFloat(e.target.value);
+                            if (!isNaN(val) && val !== order.finalTotal) updateOrderTotal(order.id, val, order.customer, order.finalTotal);
+                          }}
+                          className={`w-20 bg-transparent border-b border-gray-300 focus:border-black outline-none py-1 ${order.customer.isManualDiscount ? 'text-purple-700 font-black' : ''}`}
+                        />
+                      </div>
+                      {order.customer.isManualDiscount && (
+                        <div className="mt-1">
+                          <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-1 rounded border border-purple-200 inline-flex items-center gap-1">
+                            ✍️ Personal Discount
+                          </span>
+                        </div>
+                      )}
                       {order.voucherCode && (
                         <div className="mt-1">
                           <span className="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded border border-green-200 inline-flex items-center gap-1">
@@ -513,7 +623,31 @@ export default function AdminPage() {
                       <option value="gcash">GCash</option>
                       <option value="bank">Bank Transfer</option>
                    </select>
-                   <div className="font-black text-lg">₱{order.finalTotal?.toFixed(2)}</div>
+                   <div className="font-black text-lg flex items-center gap-1 relative group">
+                      {order.customer.isManualDiscount && order.customer.originalTotal && (
+                        <div className="absolute bottom-full left-0 mb-2 px-2 py-1 bg-gray-900 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 shadow-lg font-normal">
+                          Original: ₱{Number(order.customer.originalTotal).toFixed(2)}
+                          <div className="absolute top-full left-4 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                        </div>
+                      )}
+                      <span>₱</span>
+                      <input 
+                        key={order.finalTotal}
+                        type="number" 
+                        step="0.01"
+                        defaultValue={order.finalTotal}
+                        onBlur={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val) && val !== order.finalTotal) updateOrderTotal(order.id, val, order.customer, order.finalTotal);
+                        }}
+                        className={`w-24 bg-transparent border-b border-gray-300 focus:border-black outline-none py-1 ${order.customer.isManualDiscount ? 'text-purple-700 font-black' : ''}`}
+                      />
+                   </div>
+                   {order.customer.isManualDiscount && (
+                      <div className="text-xs text-purple-600 font-bold mt-1 flex items-center gap-1">
+                        <span>✍️ Personal Discount</span>
+                      </div>
+                   )}
                    {order.voucherCode && (
                       <div className="text-xs text-green-600 font-bold mt-1 flex items-center gap-1">
                         <span>🏷️ {order.voucherCode}</span>
@@ -565,7 +699,7 @@ export default function AdminPage() {
           )}
         </div>
           </>
-        ) : (
+        ) : activeTab === 'vouchers' ? (
           <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-200">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
@@ -614,6 +748,71 @@ export default function AdminPage() {
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Most Popular Product</h3>
+                <div className="text-3xl font-black text-black mb-1">{stats.bestSeller?.name}</div>
+                <div className="text-sm text-gray-500">Sold {stats.bestSeller?.count} times all-time</div>
+              </div>
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Total Boxes Sold</h3>
+                <div className="text-3xl font-black text-black mb-1">{stats.totalBoxes}</div>
+                <div className="text-sm text-gray-500">Across all orders</div>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+              <h3 className="text-lg font-bold text-gray-900 mb-6">Orders per Month</h3>
+              {stats.monthly.length > 0 ? (
+                <div className="flex items-end gap-4 h-64 w-full overflow-x-auto pb-2">
+                  {stats.monthly.map((m, i) => {
+                    const max = Math.max(...stats.monthly.map(item => item.count), 1);
+                    const height = (m.count / max) * 100;
+                    return (
+                      <div key={i} className="flex flex-col items-center gap-2 min-w-[60px] flex-1 group">
+                        <div className="text-xs font-bold text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity">{m.count}</div>
+                        <div 
+                          className="w-full bg-blue-500 rounded-t-lg transition-all hover:bg-blue-600 relative"
+                          style={{ height: `${height}%`, minHeight: '4px' }}
+                        ></div>
+                        <div className="text-xs text-gray-500 font-medium whitespace-nowrap">{m.label}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center text-gray-500 py-10">No data available for graph.</div>
+              )}
+            </div>
+
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+              <h3 className="text-lg font-bold text-gray-900 mb-6">Revenue per Month</h3>
+              {stats.monthly.length > 0 ? (
+                <div className="flex items-end gap-4 h-64 w-full overflow-x-auto pb-2">
+                  {stats.monthly.map((m, i) => {
+                    const max = Math.max(...stats.monthly.map(item => item.revenue), 1);
+                    const height = (m.revenue / max) * 100;
+                    return (
+                      <div key={i} className="flex flex-col items-center gap-2 min-w-[60px] flex-1 group">
+                        <div className="text-xs font-bold text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                          ₱{m.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                        <div 
+                          className="w-full bg-green-500 rounded-t-lg transition-all hover:bg-green-600 relative"
+                          style={{ height: `${height}%`, minHeight: '4px' }}
+                        ></div>
+                        <div className="text-xs text-gray-500 font-medium whitespace-nowrap">{m.label}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center text-gray-500 py-10">No data available for graph.</div>
+              )}
             </div>
           </div>
         )}
