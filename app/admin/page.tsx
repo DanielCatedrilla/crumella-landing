@@ -105,6 +105,33 @@ export default function AdminPage() {
     }
   };
 
+  const updateOrderDate = async (id: number, currentCustomer: any, newDate: string) => {
+    const updatedCustomer = { ...currentCustomer, date: newDate };
+    const { error } = await supabase
+      .from('orders')
+      .update({ customer: updatedCustomer })
+      .eq('id', id);
+
+    if (error) {
+      alert("Error updating date");
+    } else {
+      fetchOrders(true);
+    }
+  };
+
+  const updatePaymentMethod = async (id: number, newMethod: string) => {
+    const { error } = await supabase
+      .from('orders')
+      .update({ paymentMethod: newMethod })
+      .eq('id', id);
+
+    if (error) {
+      alert("Error updating payment method");
+    } else {
+      fetchOrders(true);
+    }
+  };
+
   const deleteOrder = async (id: number) => {
     if (!window.confirm("Are you sure you want to delete this order? This action cannot be undone.")) return;
 
@@ -298,7 +325,16 @@ export default function AdminPage() {
                           {order.customer.orderType === 'delivery' ? order.customer.address : order.customer.pickupLocation}
                         </div>
                         <div className="font-bold text-gray-900 mb-1">📅 Schedule</div>
-                        <div className="text-gray-800">{order.customer.date}</div>
+                        <input 
+                          type="date" 
+                          className="text-gray-800 text-xs bg-transparent border-b border-gray-300 focus:border-black outline-none w-full mb-1"
+                          defaultValue={order.customer.date}
+                          onBlur={(e) => {
+                            if (e.target.value !== order.customer.date) {
+                              updateOrderDate(order.id, order.customer, e.target.value);
+                            }
+                          }}
+                        />
                         <div className="text-gray-800">{order.customer.timeWindow}</div>
                         {order.customer.preferredTime && (
                           <div className="text-blue-600 font-bold mt-1">Pref: {order.customer.preferredTime}</div>
@@ -316,7 +352,15 @@ export default function AdminPage() {
                       )}
                     </td>
                     <td className="p-4 capitalize text-gray-700">
-                      {order.paymentMethod === 'gcash' ? 'GCash' : order.paymentMethod === 'bank' ? 'Bank Transfer' : 'Cash'}
+                      <select 
+                        className="bg-transparent border-b border-gray-300 focus:border-black outline-none cursor-pointer py-1"
+                        value={order.paymentMethod || 'cash'}
+                        onChange={(e) => updatePaymentMethod(order.id, e.target.value)}
+                      >
+                        <option value="cash">Cash</option>
+                        <option value="gcash">GCash</option>
+                        <option value="bank">Bank Transfer</option>
+                      </select>
                     </td>
                     <td className="p-4 font-bold text-black whitespace-nowrap">
                       <div>₱{order.finalTotal?.toFixed(2)}</div>
@@ -423,7 +467,16 @@ export default function AdminPage() {
                   }`}>
                     {order.customer.orderType}
                   </span>
-                  <span className="font-bold text-gray-700">{order.customer.date}</span>
+                  <input 
+                    type="date" 
+                    className="font-bold text-gray-700 text-xs bg-transparent border-b border-gray-300 focus:border-black outline-none"
+                    defaultValue={order.customer.date}
+                    onBlur={(e) => {
+                      if (e.target.value !== order.customer.date) {
+                        updateOrderDate(order.id, order.customer, e.target.value);
+                      }
+                    }}
+                  />
                 </div>
                 <div className="text-gray-800 text-xs leading-relaxed">
                    {order.customer.orderType === 'delivery' ? order.customer.address : order.customer.pickupLocation}
@@ -451,7 +504,15 @@ export default function AdminPage() {
 
               <div className="flex justify-between items-center border-t border-gray-100 pt-3">
                 <div>
-                   <div className="text-xs text-gray-600 capitalize">{order.paymentMethod === 'gcash' ? 'GCash' : order.paymentMethod === 'bank' ? 'Bank Transfer' : 'Cash'}</div>
+                   <select 
+                      className="text-xs text-gray-600 capitalize bg-transparent border-b border-gray-300 focus:border-black outline-none mb-1 cursor-pointer"
+                      value={order.paymentMethod || 'cash'}
+                      onChange={(e) => updatePaymentMethod(order.id, e.target.value)}
+                   >
+                      <option value="cash">Cash</option>
+                      <option value="gcash">GCash</option>
+                      <option value="bank">Bank Transfer</option>
+                   </select>
                    <div className="font-black text-lg">₱{order.finalTotal?.toFixed(2)}</div>
                    {order.voucherCode && (
                       <div className="text-xs text-green-600 font-bold mt-1 flex items-center gap-1">
