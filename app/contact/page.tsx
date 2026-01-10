@@ -33,6 +33,12 @@ export default function ContactPage() {
     const templateID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || "";
     const publicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || "";
 
+    if (!serviceID || !templateID || !publicKey) {
+      alert("Configuration Error: EmailJS environment variables are missing. Please check your deployment settings.");
+      setLoading(false);
+      return;
+    }
+
     const templateParams = {
       from_name: formData.name,
       from_email: formData.email,
@@ -46,9 +52,9 @@ export default function ContactPage() {
         setShowSuccess(true);
         setFormData({ name: "", email: "", subject: "", message: "" });
       })
-      .catch((error) => {
+      .catch((error: any) => {
         console.error('FAILED...', error);
-        alert("Failed to send message. Please try again later.");
+        alert(`Failed to send message: ${error.text || "Please check your internet connection or try again later."}`);
       })
       .finally(() => {
         setLoading(false);
