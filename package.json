@@ -10,11 +10,15 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.90.1",
+    "@types/leaflet": "^1.9.21",
     "@vercel/analytics": "^1.6.1",
+    "leaflet": "^1.9.4",
+    "leaflet-geosearch": "^4.2.2",
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
     "react-icons": "^5.5.0",
+    "react-leaflet": "^5.0.0",
     "swiper": "^12.0.3"
   },
   "devDependencies": {

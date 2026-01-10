@@ -4,6 +4,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { ORDER_ITEMS } from "../../components/Menu";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
+
+const LocationPicker = dynamic(() => import('../../components/LocationPicker'), { 
+  ssr: false,
+  loading: () => <div className="h-96 md:h-64 w-full bg-gray-100 rounded-xl animate-pulse flex items-center justify-center text-gray-400 text-sm font-bold mt-4">Loading Map...</div>
+});
+
+const STORE_LOCATION = { lat: 10.7819, lng: 122.5438 }; // Store coordinates (GT Town Center Pavia)
 
 export default function OrderPage() {
   // State to track quantities for each cookie (by ID)
@@ -18,7 +26,10 @@ export default function OrderPage() {
     pickupLocation: "",
     date: "",
     timeWindow: "",
-    preferredTime: ""
+    preferredTime: "",
+    googleMapsLink: "",
+    latitude: null as number | null,
+    longitude: null as number | null
   });
 
   const router = useRouter();
@@ -39,11 +50,35 @@ export default function OrderPage() {
 
   // Calculate totals
   const totalItems = Object.values(cart).reduce((a, b) => a + b, 0);
-  const totalPrice = Object.entries(cart).reduce((total, [id, qty]) => {
+  const itemsTotal = Object.entries(cart).reduce((total, [id, qty]) => {
     const item = ORDER_ITEMS.find(i => i.id === Number(id));
     const price = item?.price || 4.00; // Fallback to 4.00 if no price set
     return total + (price * qty);
   }, 0);
+
+  // Calculate Delivery Fee
+  let deliveryFee = 0;
+  let distanceKm = 0;
+
+  if (formData.orderType === 'delivery' && formData.latitude && formData.longitude) {
+    const R = 6371; // Radius of the earth in km
+    const dLat = (formData.latitude - STORE_LOCATION.lat) * (Math.PI / 180);
+    const dLon = (formData.longitude - STORE_LOCATION.lng) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(STORE_LOCATION.lat * (Math.PI / 180)) * Math.cos(formData.latitude * (Math.PI / 180)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    distanceKm = R * c;
+    
+    if (distanceKm <= 5) {
+      deliveryFee = 50;
+    } else {
+      deliveryFee = 50 + (Math.ceil(distanceKm - 5) * 6);
+    }
+  }
+
+  const totalPrice = itemsTotal + deliveryFee;
 
   // Generate available dates based on constraints
   const getAvailableDates = () => {
@@ -68,6 +103,14 @@ export default function OrderPage() {
         }
       }
       
+      // Cutoff logic: Orders close at 10 PM (22:00) the day before
+      if (isValid) {
+        const cutoffTime = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1, 22, 0, 0);
+        if (today > cutoffTime) {
+          isValid = false;
+        }
+      }
+      
       if (isValid) dates.push(d);
     }
     return dates;
@@ -78,8 +121,12 @@ export default function OrderPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    const finalAddress = formData.orderType === 'delivery' 
+      ? `${formData.address}${formData.googleMapsLink ? `\n\n📍 Pinned Location: ${formData.googleMapsLink}` : ''}`
+      : formData.address;
+
     const orderData = {
-      customer: formData,
+      customer: { ...formData, address: finalAddress },
       items: Object.entries(cart).map(([id, qty]) => {
         const item = ORDER_ITEMS.find(i => i.id === Number(id));
         return { name: item?.name, quantity: qty };
@@ -333,14 +380,32 @@ export default function OrderPage() {
                     <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Delivery Address</label>
                     <textarea required rows={3} placeholder="123 Cookie Lane..." className="w-full px-5 py-4 rounded-xl bg-gray-50 border-2 border-transparent focus:border-black focus:bg-white outline-none transition-all resize-none text-black placeholder:text-gray-400 font-medium"
                       value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
+                    
+                    <div className="mt-4">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Pin Exact Location</label>
+                      <LocationPicker onLocationSelect={(lat, lng) => setFormData({
+                        ...formData, 
+                        googleMapsLink: `https://www.google.com/maps?q=${lat},${lng}`,
+                        latitude: lat,
+                        longitude: lng
+                      })} />
+                    </div>
                   </div>
                 )}
 
                 <div className="border-t border-gray-100 pt-8 mt-8">
                   <div className="flex justify-between items-center mb-3">
-                    <span className="text-gray-500 font-medium">Total Items</span>
-                    <span className="font-bold text-lg text-black">{totalItems}</span>
+                    <span className="text-gray-500 font-medium">Subtotal ({totalItems} items)</span>
+                    <span className="font-bold text-lg text-black">₱{itemsTotal.toFixed(2)}</span>
                   </div>
+                  {deliveryFee > 0 && (
+                    <div className="flex justify-between items-center mb-3 animate-in fade-in slide-in-from-top-1">
+                      <span className="text-gray-500 font-medium">
+                        Delivery Fee <span className="text-xs text-gray-400">({distanceKm.toFixed(1)}km)</span>
+                      </span>
+                      <span className="font-bold text-lg text-black">₱{deliveryFee.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center text-xl font-black text-black">
                     <span>Total</span>
                     <span>₱{totalPrice.toFixed(2)}</span>

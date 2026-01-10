@@ -3,6 +3,8 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "../../components/supabase";
 import Link from "next/link";
 
+const STORE_LOCATION = { lat: 10.7819, lng: 122.5438 }; // GT Town Center Pavia
+
 export default function AdminPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,7 +113,27 @@ export default function AdminPage() {
     if (error) {
       console.error("Error fetching orders:", error);
     } else {
-      setOrders(data || []);
+      const sortedData = (data || []).sort((a, b) => {
+        // Sort by Date (Ascending) - Earliest date first
+        const dateA = a.customer?.date || '9999-12-31';
+        const dateB = b.customer?.date || '9999-12-31';
+        if (dateA !== dateB) return dateA.localeCompare(dateB);
+
+        // Sort by Time (Ascending) - Earliest time first
+        const getTimeVal = (t: string) => {
+          if (!t) return 9999;
+          const match = t.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm|AM|PM)?/);
+          if (!match) return 9999;
+          let h = parseInt(match[1]);
+          const m = match[2] ? parseInt(match[2]) : 0;
+          const mer = match[3]?.toLowerCase();
+          if (mer === 'pm' && h < 12) h += 12;
+          if (mer === 'am' && h === 12) h = 0;
+          return h * 60 + m;
+        };
+        return getTimeVal(a.customer?.timeWindow || '') - getTimeVal(b.customer?.timeWindow || '');
+      });
+      setOrders(sortedData);
     }
     setLoading(false);
   };
@@ -124,6 +146,26 @@ export default function AdminPage() {
 
     if (!error) {
       setVouchers(data || []);
+    }
+  };
+
+  const getDeliveryFee = (customer: any) => {
+    if (customer.orderType !== 'delivery' || !customer.latitude || !customer.longitude) return 0;
+    
+    const R = 6371; // Radius of the earth in km
+    const dLat = (customer.latitude - STORE_LOCATION.lat) * (Math.PI / 180);
+    const dLon = (customer.longitude - STORE_LOCATION.lng) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(STORE_LOCATION.lat * (Math.PI / 180)) * Math.cos(customer.latitude * (Math.PI / 180)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distanceKm = R * c;
+    
+    if (distanceKm <= 5) {
+      return 50;
+    } else {
+      return 50 + (Math.ceil(distanceKm - 5) * 6);
     }
   };
 
@@ -374,6 +416,7 @@ export default function AdminPage() {
                   <th className="p-4 font-bold text-gray-700">Logistics</th>
                   <th className="p-4 font-bold text-gray-700">Items</th>
                   <th className="p-4 font-bold text-gray-700">Payment</th>
+                  <th className="p-4 font-bold text-gray-700">Del. Fee</th>
                   <th className="p-4 font-bold text-gray-700">Total</th>
                   <th className="p-4 font-bold text-gray-700">Proof</th>
                   <th className="p-4 font-bold text-gray-700">Status</th>
@@ -408,6 +451,16 @@ export default function AdminPage() {
                         <div className="text-gray-800 mb-3 leading-relaxed">
                           {order.customer.orderType === 'delivery' ? order.customer.address : order.customer.pickupLocation}
                         </div>
+                        {order.customer.latitude && order.customer.longitude && (
+                          <a 
+                            href={`https://www.google.com/maps?q=${order.customer.latitude},${order.customer.longitude}`}
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 bg-green-50 text-green-700 px-2 py-1 rounded border border-green-200 font-bold mb-3 hover:bg-green-100 transition-colors"
+                          >
+                            🗺️ View Pinned Map
+                          </a>
+                        )}
                         <div className="font-bold text-gray-900 mb-1">📅 Schedule</div>
                         <input 
                           type="date" 
@@ -445,6 +498,13 @@ export default function AdminPage() {
                         <option value="gcash">GCash</option>
                         <option value="bank">Bank Transfer</option>
                       </select>
+                    </td>
+                    <td className="p-4 text-gray-700 whitespace-nowrap">
+                      {order.customer.orderType === 'delivery' ? (
+                        <span className="font-medium">₱{getDeliveryFee(order.customer).toFixed(2)}</span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
                     </td>
                     <td className="p-4 font-bold text-black whitespace-nowrap">
                       <div className="flex items-center gap-1 relative group">
@@ -594,6 +654,11 @@ export default function AdminPage() {
                 <div className="text-gray-800 text-xs mt-1">
                    Time: {order.customer.timeWindow}
                 </div>
+                {order.customer.orderType === 'delivery' && (
+                  <div className="text-gray-800 text-xs mt-1 font-bold">
+                    Delivery Fee: ₱{getDeliveryFee(order.customer).toFixed(2)}
+                  </div>
+                )}
               </div>
 
               <div>
