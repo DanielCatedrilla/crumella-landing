@@ -451,9 +451,11 @@ export default function AdminPage() {
                         <div className="text-gray-800 mb-3 leading-relaxed">
                           {order.customer.orderType === 'delivery' ? order.customer.address : order.customer.pickupLocation}
                         </div>
-                        {order.customer.latitude && order.customer.longitude && (
+                        {(order.customer.latitude && order.customer.longitude || order.customer.googleMapsLink) && (
                           <a 
-                            href={`https://www.google.com/maps?q=${order.customer.latitude},${order.customer.longitude}`}
+                            href={order.customer.latitude && order.customer.longitude 
+                              ? `https://www.google.com/maps?q=${order.customer.latitude},${order.customer.longitude}`
+                              : order.customer.googleMapsLink}
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 bg-green-50 text-green-700 px-2 py-1 rounded border border-green-200 font-bold mb-3 hover:bg-green-100 transition-colors"
@@ -651,6 +653,20 @@ export default function AdminPage() {
                 <div className="text-gray-800 text-xs leading-relaxed">
                    {order.customer.orderType === 'delivery' ? order.customer.address : order.customer.pickupLocation}
                 </div>
+                {order.customer.orderType === 'delivery' && (order.customer.latitude && order.customer.longitude || order.customer.googleMapsLink) && (
+                  <div className="mt-2">
+                    <a 
+                      href={order.customer.latitude && order.customer.longitude 
+                        ? `https://www.google.com/maps?q=${order.customer.latitude},${order.customer.longitude}`
+                        : order.customer.googleMapsLink}
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 bg-green-100 text-green-700 px-2 py-1 rounded border border-green-200 font-bold text-xs hover:bg-green-200 transition-colors"
+                    >
+                      🗺️ View Pinned Map
+                    </a>
+                  </div>
+                )}
                 <div className="text-gray-800 text-xs mt-1">
                    Time: {order.customer.timeWindow}
                 </div>
