@@ -6,6 +6,12 @@ import Link from "next/link";
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
 
+  const handleNavAway = () => {
+    // Fire a custom event that the order page can listen to, to clear persisted state.
+    window.dispatchEvent(new Event('clear-order-persistence'));
+    setIsOpen(false);
+  };
+
   return (
     <nav className="fixed top-0 left-0 w-full z-50 transition-all duration-300">
       {/* Backdrop Blur Overlay */}
@@ -34,7 +40,7 @@ export default function Navbar() {
 
         {/* Logo (Center) */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hover:scale-105 transition-transform duration-300">
-          <Link href="/" onClick={() => setIsOpen(false)}>
+          <Link href="/" onClick={handleNavAway}>
             <Image
                 src={"/crumelladark.png"}
                 alt="thechewyco logo"
@@ -47,7 +53,7 @@ export default function Navbar() {
         </div>
 
         {/* Order Button (Right) */}
-        <Link href="/order" className="bg-black text-white px-5 py-2 md:px-8 md:py-3 rounded-full font-bold text-sm md:text-lg shadow-md hover:bg-gray-900 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer z-50">
+        <Link href="/order" className="hidden md:block bg-black text-white px-5 py-2 md:px-8 md:py-3 rounded-full font-bold text-sm md:text-lg shadow-md hover:bg-gray-900 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer z-50">
           Order Now
         </Link>
 
@@ -57,16 +63,16 @@ export default function Navbar() {
       {/* Collapsible Menu Overlay */}
       <div className={`absolute top-full left-0 w-full bg-[#a6dff6] shadow-xl border-t border-white/20 overflow-hidden transition-all duration-500 ease-in-out ${isOpen ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'}`}>
         <div className="flex flex-col items-center gap-6 py-8 pb-10">
-          <Link href="/" onClick={() => setIsOpen(false)} className="text-xl font-black uppercase tracking-widest hover:text-white transition-colors">
+          <Link href="/" onClick={handleNavAway} className="text-xl font-black uppercase tracking-widest hover:text-white transition-colors">
             Home
           </Link>
           <Link href="/#menu" onClick={() => setIsOpen(false)} className="text-xl font-black uppercase tracking-widest hover:text-white transition-colors">
             Menu
           </Link>
-          <Link href="/creators" onClick={() => setIsOpen(false)} className="text-xl font-black uppercase tracking-widest hover:text-white transition-colors">
+          <Link href="/creators" onClick={handleNavAway} className="text-xl font-black uppercase tracking-widest hover:text-white transition-colors">
             Creators
           </Link>
-          <Link href="/contact" onClick={() => setIsOpen(false)} className="text-xl font-black uppercase tracking-widest hover:text-white transition-colors">
+          <Link href="/contact" onClick={handleNavAway} className="text-xl font-black uppercase tracking-widest hover:text-white transition-colors">
             Contact
           </Link>
         </div>

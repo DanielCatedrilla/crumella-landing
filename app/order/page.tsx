@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ORDER_ITEMS } from "../../components/Menu";
@@ -16,6 +16,7 @@ const STORE_LOCATION = { lat: 10.7819, lng: 122.5438 }; // Store coordinates (GT
 export default function OrderPage() {
   // State to track quantities for each cookie (by ID)
   const [cart, setCart] = useState<{ [key: number]: number }>({});
+  const [isCartLoaded, setIsCartLoaded] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -34,6 +35,55 @@ export default function OrderPage() {
 
   const router = useRouter();
   
+  // Load saved checkout details and cart on mount
+  useEffect(() => {
+    const savedData = localStorage.getItem("chewy_checkout_details");
+    if (savedData) {
+      try {
+        setFormData((prev) => ({ ...prev, ...JSON.parse(savedData) }));
+      } catch (error) {
+        console.error("Error loading saved checkout details:", error);
+      }
+    }
+
+    const savedCart = localStorage.getItem("chewy_cart_items");
+    if (savedCart) {
+      try {
+        setCart(JSON.parse(savedCart));
+      } catch (error) {
+        console.error("Error loading saved cart:", error);
+      }
+    }
+    setIsCartLoaded(true);
+  }, []);
+
+  // Save checkout details whenever they change
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      localStorage.setItem("chewy_checkout_details", JSON.stringify(formData));
+    }, 500);
+    return () => clearTimeout(timeoutId);
+  }, [formData]);
+
+  // Save cart items whenever they change
+  useEffect(() => {
+    if (isCartLoaded) {
+      localStorage.setItem("chewy_cart_items", JSON.stringify(cart));
+    }
+  }, [cart, isCartLoaded]);
+
+  // Add a listener to clear persisted data when the user intentionally navigates away.
+  useEffect(() => {
+    const clearStorage = () => {
+      localStorage.removeItem("chewy_cart_items");
+      localStorage.removeItem("chewy_checkout_details");
+    };
+    window.addEventListener('clear-order-persistence', clearStorage);
+    return () => {
+      window.removeEventListener('clear-order-persistence', clearStorage);
+    };
+  }, []);
+
   // Get unique categories
   const categories = Array.from(new Set(ORDER_ITEMS.map(item => item.category || "Single Flavors")));
 
@@ -121,12 +171,24 @@ export default function OrderPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const finalAddress = formData.orderType === 'delivery' 
+    const isDelivery = formData.orderType === 'delivery';
+
+    const finalAddress = isDelivery
       ? `${formData.address}${formData.googleMapsLink ? `\n\n📍 Pinned Location: ${formData.googleMapsLink}` : ''}`
       : formData.address;
 
+    // Sanitize data: remove delivery details if pickup, and vice versa
+    const customerData = {
+      ...formData,
+      address: finalAddress,
+      googleMapsLink: isDelivery ? formData.googleMapsLink : "",
+      latitude: isDelivery ? formData.latitude : null,
+      longitude: isDelivery ? formData.longitude : null,
+      pickupLocation: isDelivery ? "" : formData.pickupLocation,
+    };
+
     const orderData = {
-      customer: { ...formData, address: finalAddress },
+      customer: customerData,
       items: Object.entries(cart).map(([id, qty]) => {
         const item = ORDER_ITEMS.find(i => i.id === Number(id));
         return { name: item?.name, quantity: qty };
@@ -150,6 +212,11 @@ export default function OrderPage() {
     }
   };
 
+  // Clear saved data when exiting to home
+  const handleExit = () => {
+    window.dispatchEvent(new Event('clear-order-persistence'));
+  };
+
   return (
     <main className="min-h-screen bg-[#fffdf7] py-12 px-4 md:px-8 relative overflow-hidden">
       {/* Decorative background elements */}
@@ -159,7 +226,7 @@ export default function OrderPage() {
       <div className="max-w-7xl mx-auto relative z-10">
         {/* Header */}
         <div className="flex items-center justify-between mb-12">
-          <Link href="/" className="text-sm font-bold uppercase tracking-widest text-black hover:text-[#a7dff4] transition-colors">
+          <Link href="/" onClick={handleExit} className="text-sm font-bold uppercase tracking-widest text-black hover:text-[#a7dff4] transition-colors">
             ← Back to Home
           </Link>
           <h1 className="text-4xl md:text-5xl font-black tracking-tight text-center text-black">

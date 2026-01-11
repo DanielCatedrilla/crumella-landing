@@ -159,6 +159,16 @@ function LocationMarker({ position, setPosition, onLocationSelect }: { position:
 
 export default function LocationPicker({ onLocationSelect }: { onLocationSelect: (lat: number, lng: number) => void }) {
   const [position, setPosition] = useState<L.LatLng | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, []);
 
   return (
     <div className="h-96 md:h-64 w-full rounded-xl overflow-hidden border-2 border-gray-200 z-0 relative mt-4">
@@ -205,7 +215,7 @@ export default function LocationPicker({ onLocationSelect }: { onLocationSelect:
           padding: 0 8px;
         }
       `}</style>
-      <MapContainer center={DEFAULT_CENTER} zoom={13} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
+      <MapContainer ref={mapRef} center={DEFAULT_CENTER} zoom={13} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

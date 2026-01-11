@@ -1,8 +1,14 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import Link from "next/link";
 
 export default function SuccessPage() {
+  useEffect(() => {
+    // Clear saved cart and checkout details on success
+    localStorage.removeItem("chewy_cart_items");
+    localStorage.removeItem("chewy_checkout_details");
+  }, []);
+
   return (
     <main className="min-h-screen bg-blue-50 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Decorative Background Blobs */}
