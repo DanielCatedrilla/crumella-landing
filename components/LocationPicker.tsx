@@ -157,21 +157,20 @@ function LocationMarker({ position, setPosition, onLocationSelect }: { position:
   );
 }
 
-export default function LocationPicker({ onLocationSelect }: { onLocationSelect: (lat: number, lng: number) => void }) {
+export default function LocationPicker({ onLocationSelect, hasError }: { onLocationSelect: (lat: number, lng: number) => void, hasError?: boolean }) {
   const [position, setPosition] = useState<L.LatLng | null>(null);
-  const mapRef = useRef<L.Map | null>(null);
+  const [map, setMap] = useState<L.Map | null>(null);
 
   useEffect(() => {
+    // On component unmount, this cleanup function will be called
     return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
+      // Explicitly remove the map instance to prevent container reuse errors in development/HMR
+      map?.remove();
     };
-  }, []);
+  }, [map]);
 
   return (
-    <div className="h-96 md:h-64 w-full rounded-xl overflow-hidden border-2 border-gray-200 z-0 relative mt-4">
+    <div className={`h-96 md:h-64 w-full rounded-xl overflow-hidden border-2 ${hasError ? 'border-red-500' : 'border-gray-200'} z-0 relative mt-4 transition-colors duration-300`}>
       <style>{`
         .leaflet-control-geosearch form {
           background: white !important;
@@ -215,7 +214,7 @@ export default function LocationPicker({ onLocationSelect }: { onLocationSelect:
           padding: 0 8px;
         }
       `}</style>
-      <MapContainer ref={mapRef} center={DEFAULT_CENTER} zoom={13} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
+      <MapContainer center={DEFAULT_CENTER} zoom={13} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

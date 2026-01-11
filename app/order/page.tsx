@@ -32,6 +32,7 @@ export default function OrderPage() {
     latitude: null as number | null,
     longitude: null as number | null
   });
+  const [locationError, setLocationError] = useState(false);
 
   const router = useRouter();
   
@@ -172,6 +173,12 @@ export default function OrderPage() {
     e.preventDefault();
     
     const isDelivery = formData.orderType === 'delivery';
+
+    if (isDelivery && (!formData.latitude || !formData.longitude)) {
+      setLocationError(true);
+      alert("Please pin your exact delivery location on the map.");
+      return;
+    }
 
     const finalAddress = isDelivery
       ? `${formData.address}${formData.googleMapsLink ? `\n\n📍 Pinned Location: ${formData.googleMapsLink}` : ''}`
@@ -449,13 +456,19 @@ export default function OrderPage() {
                       value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
                     
                     <div className="mt-4">
-                      <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Pin Exact Location</label>
-                      <LocationPicker onLocationSelect={(lat, lng) => setFormData({
-                        ...formData, 
-                        googleMapsLink: `https://www.google.com/maps?q=${lat},${lng}`,
-                        latitude: lat,
-                        longitude: lng
-                      })} />
+                      <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Pin Exact Location <span className="text-red-500">*</span></label>
+                      <LocationPicker 
+                        hasError={locationError}
+                        onLocationSelect={(lat, lng) => {
+                          setFormData({
+                            ...formData, 
+                            googleMapsLink: `https://www.google.com/maps?q=${lat},${lng}`,
+                            latitude: lat,
+                            longitude: lng
+                          });
+                          setLocationError(false);
+                        }} 
+                      />
                     </div>
                   </div>
                 )}
