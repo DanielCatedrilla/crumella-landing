@@ -144,7 +144,7 @@ export default function PaymentPage() {
                     />
                     <div className="ml-4">
                         <span className="block font-bold text-lg text-black">
-                            {order.customer.orderType === 'pickup' ? 'Pay at Store' : 'Cash on Delivery/Pickup'}
+                            {order.customer.orderType === 'pickup' ? 'Cash on Pickup' : 'Cash on Delivery'}
                         </span>
                         <span className="block text-sm text-gray-500 mt-1">Pay in cash when you receive your order.</span>
                     </div>
