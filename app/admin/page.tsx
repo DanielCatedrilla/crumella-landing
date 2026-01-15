@@ -12,6 +12,7 @@ export default function AdminPage() {
   const [vouchers, setVouchers] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'orders' | 'vouchers' | 'statistics'>('orders');
   const [password, setPassword] = useState("");
+  const [orderFilter, setOrderFilter] = useState('All');
 
   useEffect(() => {
     const storedAuth = localStorage.getItem("adminAuthenticated");
@@ -85,6 +86,8 @@ export default function AdminPage() {
 
     return { monthly, bestSeller, totalBoxes };
   }, [orders]);
+
+  const filteredOrders = orders.filter(order => orderFilter === 'All' || order.status === orderFilter);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -370,35 +373,35 @@ export default function AdminPage() {
   return (
     <main className="min-h-screen bg-gray-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-black text-black">Admin Dashboard</h1>
-          <div className="flex items-center gap-4">
-            <Link href="/" className="text-sm font-bold underline hover:text-gray-600">Back to Home</Link>
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-black text-black">Admin Dashboard</h1>
+          <div className="flex items-center gap-4 self-start md:self-auto">
+            <Link href="/" className="text-sm font-bold underline hover:text-gray-600 whitespace-nowrap">Back to Home</Link>
             <button 
               onClick={handleLogout}
-              className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-600 transition-colors"
+              className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-600 transition-colors whitespace-nowrap"
             >
               Logout
             </button>
           </div>
         </div>
 
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0">
           <button 
             onClick={() => setActiveTab('orders')}
-            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeTab === 'orders' ? 'bg-black text-white' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
+            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors whitespace-nowrap ${activeTab === 'orders' ? 'bg-black text-white' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
           >
             Orders
           </button>
           <button 
             onClick={() => setActiveTab('vouchers')}
-            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeTab === 'vouchers' ? 'bg-black text-white' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
+            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors whitespace-nowrap ${activeTab === 'vouchers' ? 'bg-black text-white' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
           >
             Vouchers
           </button>
           <button 
             onClick={() => setActiveTab('statistics')}
-            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${activeTab === 'statistics' ? 'bg-black text-white' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
+            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors whitespace-nowrap ${activeTab === 'statistics' ? 'bg-black text-white' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
           >
             Statistics
           </button>
@@ -406,6 +409,27 @@ export default function AdminPage() {
 
         {activeTab === 'orders' ? (
           <>
+            <div className="flex gap-2 mb-4 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0">
+              {['All', 'New', 'Pending', 'Processing', 'Completed', 'Cancelled'].map((status) => (
+                <button 
+                  key={status}
+                  onClick={() => setOrderFilter(status)}
+                  className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-colors border ${
+                    orderFilter === status 
+                    ? 'bg-black text-white border-black' 
+                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  {status}
+                  <span className={`ml-2 px-1.5 py-0.5 rounded-full text-[10px] ${
+                    orderFilter === status ? 'bg-white text-black' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {status === 'All' ? orders.length : orders.filter(o => o.status === status).length}
+                  </span>
+                </button>
+              ))}
+            </div>
+
             <div className="hidden md:block bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-200">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -424,7 +448,7 @@ export default function AdminPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {orders.map((order) => (
+                {filteredOrders.map((order) => (
                   <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                     <td className="p-4 text-gray-700 whitespace-nowrap">
                       {order.status === 'New' && (
@@ -597,9 +621,9 @@ export default function AdminPage() {
                     </td>
                   </tr>
                 ))}
-                {orders.length === 0 && (
+                {filteredOrders.length === 0 && (
                     <tr>
-                        <td colSpan={9} className="p-8 text-center text-gray-500">No orders found yet.</td>
+                        <td colSpan={10} className="p-8 text-center text-gray-500">No orders found.</td>
                     </tr>
                 )}
               </tbody>
@@ -609,7 +633,7 @@ export default function AdminPage() {
 
         {/* Mobile View (Cards) */}
         <div className="md:hidden space-y-4">
-          {orders.map((order) => (
+          {filteredOrders.map((order) => (
             <div key={order.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-4">
               <div className="flex justify-between items-start">
                 <div>
@@ -775,7 +799,7 @@ export default function AdminPage() {
               </div>
             </div>
           ))}
-          {orders.length === 0 && (
+          {filteredOrders.length === 0 && (
               <div className="text-center text-gray-500 py-10">No orders found.</div>
           )}
         </div>
