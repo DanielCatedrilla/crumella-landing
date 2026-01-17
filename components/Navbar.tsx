@@ -72,6 +72,9 @@ export default function Navbar() {
           <Link href="/creators" onClick={handleNavAway} className="text-xl font-black uppercase tracking-widest hover:text-white transition-colors">
             Creators
           </Link>
+          <Link href="/track-order" onClick={handleNavAway} className="text-xl font-black uppercase tracking-widest hover:text-white transition-colors">
+            Track Order
+          </Link>
           <Link href="/contact" onClick={handleNavAway} className="text-xl font-black uppercase tracking-widest hover:text-white transition-colors">
             Contact
           </Link>

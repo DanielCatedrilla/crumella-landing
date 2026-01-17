@@ -169,6 +169,15 @@ export default function OrderPage() {
 
   const availableDates = getAvailableDates();
 
+  const generateTrackingCode = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let randomPart = '';
+    for (let i = 0; i < 5; i++) {
+      randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return `CRML-${randomPart}`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -202,6 +211,7 @@ export default function OrderPage() {
       }),
       total: totalPrice,
       status: "New",
+      tracking_number: generateTrackingCode(),
     };
 
     localStorage.setItem("latestOrder", JSON.stringify(orderData));

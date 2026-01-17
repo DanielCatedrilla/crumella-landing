@@ -185,7 +185,7 @@ export default function AdminPage() {
     }
   };
 
-  const updateStatus = async (id: number, newStatus: string) => {
+  const updateStatus = async (id: any, newStatus: string) => {
     const { error } = await supabase
       .from('orders')
       .update({ status: newStatus })
@@ -198,7 +198,7 @@ export default function AdminPage() {
     }
   };
 
-  const updateOrderDate = async (id: number, currentCustomer: any, newDate: string) => {
+  const updateOrderDate = async (id: any, currentCustomer: any, newDate: string) => {
     const updatedCustomer = { ...currentCustomer, date: newDate };
     const { error } = await supabase
       .from('orders')
@@ -212,7 +212,7 @@ export default function AdminPage() {
     }
   };
 
-  const updatePaymentMethod = async (id: number, newMethod: string) => {
+  const updatePaymentMethod = async (id: any, newMethod: string) => {
     const { error } = await supabase
       .from('orders')
       .update({ paymentMethod: newMethod })
@@ -225,7 +225,7 @@ export default function AdminPage() {
     }
   };
 
-  const updateOrderTotal = async (id: number, newTotal: number, currentCustomer: any, currentOrderTotal: number) => {
+  const updateOrderTotal = async (id: any, newTotal: number, currentCustomer: any, currentOrderTotal: number) => {
     let originalTotal = currentCustomer.originalTotal;
 
     if (originalTotal === undefined && !currentCustomer.isManualDiscount) {
@@ -255,7 +255,7 @@ export default function AdminPage() {
     }
   };
 
-  const deleteOrder = async (id: number) => {
+  const deleteOrder = async (id: any) => {
     if (!window.confirm("Are you sure you want to delete this order? This action cannot be undone.")) return;
 
     const { error } = await supabase
@@ -301,7 +301,7 @@ export default function AdminPage() {
         <body>
           <div class="header">
             <h1>THE CHEWY CO.</h1>
-            <div class="meta">Order #${order.id} • ${new Date(order.createdAt).toLocaleDateString()}</div>
+            <div class="meta">Order #{order.id} • Ref: ${order.tracking_number || 'N/A'} • ${new Date(order.createdAt).toLocaleDateString()}</div>
             <div class="tag">${order.customer.orderType}</div>
           </div>
 
@@ -410,7 +410,7 @@ export default function AdminPage() {
         {activeTab === 'orders' ? (
           <>
             <div className="flex gap-2 mb-4 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0">
-              {['All', 'New', 'Pending', 'Processing', 'Completed', 'Cancelled'].map((status) => (
+              {['All', 'New', 'Pending', 'Processing', 'Releasing', 'Completed', 'Cancelled'].map((status) => (
                 <button 
                   key={status}
                   onClick={() => setOrderFilter(status)}
@@ -435,6 +435,8 @@ export default function AdminPage() {
             <table className="w-full text-left text-sm">
               <thead className="bg-gray-100 border-b border-gray-200">
                 <tr>
+                  <th className="p-4 font-bold text-gray-700">ID</th>
+                  <th className="p-4 font-bold text-gray-700">Tracking No.</th>
                   <th className="p-4 font-bold text-gray-700">Date</th>
                   <th className="p-4 font-bold text-gray-700">Customer</th>
                   <th className="p-4 font-bold text-gray-700">Logistics</th>
@@ -450,6 +452,8 @@ export default function AdminPage() {
               <tbody className="divide-y divide-gray-100">
                 {filteredOrders.map((order) => (
                   <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="p-4 font-bold text-gray-500">{order.id}</td>
+                    <td className="p-4 font-bold text-gray-900 font-mono">{order.tracking_number || '-'}</td>
                     <td className="p-4 text-gray-700 whitespace-nowrap">
                       {order.status === 'New' && (
                         <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold mb-1 inline-block animate-pulse">NEW</span>
@@ -581,6 +585,7 @@ export default function AdminPage() {
                       <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                         order.status === 'Completed' ? 'bg-green-100 text-green-700' :
                         order.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
+                        order.status === 'Releasing' ? 'bg-orange-100 text-orange-700' :
                         order.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
                         'bg-blue-100 text-blue-700'
                       }`}>
@@ -593,16 +598,18 @@ export default function AdminPage() {
                         className={`border-2 rounded-xl px-4 py-2 text-xs font-bold outline-none cursor-pointer transition-all ${
                           order.status === 'Completed' ? 'bg-green-50 border-green-200 text-green-700 hover:border-green-400' :
                           order.status === 'Processing' ? 'bg-blue-50 border-blue-200 text-blue-700 hover:border-blue-400' :
+                          order.status === 'Releasing' ? 'bg-orange-50 border-orange-200 text-orange-700 hover:border-orange-400' :
                           order.status === 'Cancelled' ? 'bg-red-50 border-red-200 text-red-700 hover:border-red-400' :
                           'bg-yellow-50 border-yellow-200 text-yellow-700 hover:border-yellow-400'
                         }`}
                         value={order.status}
                         onChange={(e) => updateStatus(order.id, e.target.value)}
                       >
-                        <option value="New">New</option>
+                        <option value="New">New (Received)</option>
                         <option value="Pending">Pending</option>
-                        <option value="Processing">Processing</option>
-                        <option value="Completed">Completed</option>
+                        <option value="Processing">Processing (Baking)</option>
+                        <option value="Releasing">Releasing (Ready/Out)</option>
+                        <option value="Completed">Completed (Done)</option>
                         <option value="Cancelled">Cancelled</option>
                       </select>
                       <button 
@@ -641,7 +648,7 @@ export default function AdminPage() {
                     <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold mb-2 inline-block animate-pulse">NEW</span>
                   )}
                   <div className="text-xs text-gray-600 font-bold">
-                    {new Date(order.createdAt).toLocaleDateString()} • {new Date(order.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    #{order.id} {order.tracking_number ? `• ${order.tracking_number}` : ''} • {new Date(order.createdAt).toLocaleDateString()} • {new Date(order.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                   </div>
                   <div className="font-black text-lg text-gray-900 mt-1">{order.customer.name}</div>
                   <div className="text-xs text-gray-600">{order.customer.phone}</div>
@@ -649,6 +656,7 @@ export default function AdminPage() {
                 <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                   order.status === 'Completed' ? 'bg-green-100 text-green-700' :
                   order.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
+                  order.status === 'Releasing' ? 'bg-orange-100 text-orange-700' :
                   order.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
                   'bg-blue-100 text-blue-700'
                 }`}>
@@ -772,16 +780,18 @@ export default function AdminPage() {
                     className={`w-full border-2 rounded-xl px-4 py-2 text-xs font-bold outline-none cursor-pointer transition-all ${
                       order.status === 'Completed' ? 'bg-green-50 border-green-200 text-green-700 hover:border-green-400' :
                       order.status === 'Processing' ? 'bg-blue-50 border-blue-200 text-blue-700 hover:border-blue-400' :
+                      order.status === 'Releasing' ? 'bg-orange-50 border-orange-200 text-orange-700 hover:border-orange-400' :
                       order.status === 'Cancelled' ? 'bg-red-50 border-red-200 text-red-700 hover:border-red-400' :
                       'bg-yellow-50 border-yellow-200 text-yellow-700 hover:border-yellow-400'
                     }`}
                     value={order.status}
                     onChange={(e) => updateStatus(order.id, e.target.value)}
                  >
-                    <option value="New">New</option>
+                    <option value="New">New (Received)</option>
                     <option value="Pending">Pending</option>
-                    <option value="Processing">Processing</option>
-                    <option value="Completed">Completed</option>
+                    <option value="Processing">Processing (Baking)</option>
+                    <option value="Releasing">Releasing (Ready/Out)</option>
+                    <option value="Completed">Completed (Done)</option>
                     <option value="Cancelled">Cancelled</option>
                  </select>
                  <button 

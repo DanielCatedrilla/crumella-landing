@@ -1,13 +1,28 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
-export default function SuccessPage() {
+function SuccessContent() {
+  const searchParams = useSearchParams();
+  const orderId = searchParams.get('orderId');
+  const trackingNumber = searchParams.get('trackingNumber');
+  const displayId = trackingNumber || orderId;
+  const [copied, setCopied] = useState(false);
+
   useEffect(() => {
     // Clear saved cart and checkout details on success
     localStorage.removeItem("chewy_cart_items");
     localStorage.removeItem("chewy_checkout_details");
   }, []);
+
+  const handleCopy = () => {
+    if (displayId) {
+      navigator.clipboard.writeText(displayId);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-blue-50 flex items-center justify-center p-4 relative overflow-hidden">
@@ -29,6 +44,23 @@ export default function SuccessPage() {
           Your Crumella order is confirmed. 
         </p>
 
+        <div className="bg-blue-50 p-4 rounded-xl mb-8 flex items-center justify-between border border-blue-100">
+          <div className="text-left">
+            <div className="text-xs text-blue-600 font-bold uppercase tracking-wider mb-1">{trackingNumber ? 'Tracking Number' : 'Order ID'}</div>
+            <div className="font-black text-xl text-gray-900">
+              {displayId || <span className="text-gray-400 text-lg">No ID Found</span>}
+            </div>
+          </div>
+          {displayId && (
+            <button 
+              onClick={handleCopy}
+              className="bg-white text-blue-600 px-4 py-2 rounded-lg font-bold text-sm shadow-sm border border-blue-100 hover:bg-blue-50 transition-colors"
+            >
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
+          )}
+        </div>
+
         <Link 
           href="/" 
           className="block w-full bg-blue-600 text-white font-black text-lg py-4 rounded-2xl hover:bg-blue-700 transition-all transform hover:-translate-y-1 hover:shadow-xl active:scale-95"
@@ -49,5 +81,13 @@ export default function SuccessPage() {
         .animation-delay-4000 { animation-delay: 4s; }
       `}} />
     </main>
+  );
+}
+
+export default function SuccessPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-blue-50">Loading...</div>}>
+      <SuccessContent />
+    </Suspense>
   );
 }

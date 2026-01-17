@@ -33,6 +33,9 @@ export default function Footer(){
                         <Link href="/creators" className="text-sm font-bold uppercase tracking-widest hover:text-white transition-colors duration-300">
                             Creators
                         </Link>
+                        <Link href="/track-order" className="text-sm font-bold uppercase tracking-widest hover:text-white transition-colors duration-300">
+                            Track Order
+                        </Link>
                         <Link href="/contact" className="text-sm font-bold uppercase tracking-widest hover:text-white transition-colors duration-300">
                             Contact
                         </Link>

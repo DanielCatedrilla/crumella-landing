@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import VoucherInput from "../../components/VoucherInput";
 import { supabase } from "../../components/supabase";
+import emailjs from '@emailjs/browser';
 
 export default function PaymentPage() {
   const [order, setOrder] = useState<any>(null);
@@ -68,6 +69,24 @@ export default function PaymentPage() {
 
         if (insertError) throw insertError;
 
+        // Send Email via EmailJS
+        try {
+          await emailjs.send(
+            process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || "",
+            process.env.NEXT_PUBLIC_EMAILJS_ORDER_TEMPLATE_ID || "",
+            {
+              to_name: order.customer.name,
+              to_email: order.customer.email,
+              tracking_number: order.tracking_number,
+              total: finalTotal.toFixed(2),
+              order_items: order.items.map((item: any) => `${item.quantity}x ${item.name}`).join('\n'),
+            },
+            process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || ""
+          );
+        } catch (emailError) {
+          console.error("Failed to send email:", emailError);
+        }
+
         // 4. Increment Voucher Usage
         if (discount > 0 && voucherCode) {
           const { data: v } = await supabase.from('vouchers').select('id, used_count').eq('code', voucherCode).single();
@@ -78,7 +97,7 @@ export default function PaymentPage() {
 
         // 4. Cleanup & Redirect
         localStorage.removeItem("latestOrder");
-        router.push("/success");
+        router.push(`/success?trackingNumber=${order.tracking_number}`);
 
     } catch (error) {
         console.error("Error saving order:", error);
