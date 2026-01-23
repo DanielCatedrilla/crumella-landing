@@ -144,7 +144,7 @@ export default function FeedbackPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-[#fffdf7] py-24 px-4 relative">
+      <main className="min-h-screen bg-[#fffdf7] py-24 px-4 relative overflow-hidden">
       {/* Background Elements */}
       <div className="absolute top-0 left-0 w-full h-96 bg-[#a6dff6] rounded-b-[3rem] z-0"></div>
       
@@ -312,9 +312,17 @@ export default function FeedbackPage() {
                   <button 
                     onClick={handleFinalSubmit} 
                     disabled={isSubmitting || Object.keys(ratings).length === 0}
-                    className="w-full bg-black text-white font-bold py-5 rounded-full hover:bg-[#a7dff4] hover:text-black hover:scale-[1.01] active:scale-95 transition-all duration-300 shadow-xl text-lg disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="w-full bg-black text-white font-bold py-5 rounded-full hover:bg-[#a7dff4] hover:text-black hover:scale-[1.01] active:scale-95 transition-all duration-300 shadow-xl text-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    {isSubmitting ? "Submitting..." : "Submit All Feedback"}
+                    {isSubmitting ? (
+                      <>
+                        <svg className="animate-spin h-5 w-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Submitting...</span>
+                      </>
+                    ) : "Submit All Feedback"}
                   </button>
                   {Object.keys(ratings).length === 0 && !isSubmitting && (
                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-4 py-2 bg-gray-900 text-white text-sm font-bold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-xl whitespace-nowrap z-20">
