@@ -1,6 +1,9 @@
+"use client";
 import React from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { supabase } from "./supabase";
 
 export type MenuItem = {
     id: number;
@@ -129,6 +132,42 @@ export const ORDER_ITEMS: MenuItem[] = [
 ];
 
 export default function Menu(){
+    const [cookieRatings, setCookieRatings] = useState<Record<string, { average: number; count: number }>>({});
+
+    useEffect(() => {
+        const fetchRatings = async () => {
+            const { data } = await supabase.from('feedbacks').select('ratings');
+            if (data) {
+                const map: Record<string, { total: number; count: number }> = {};
+                data.forEach((fb: any) => {
+                    if (fb.ratings) {
+                        Object.entries(fb.ratings).forEach(([name, scores]: [string, any]) => {
+                            if (!map[name]) map[name] = { total: 0, count: 0 };
+                            const taste = Number(scores.taste) || 0;
+                            const texture = Number(scores.texture) || 0;
+                            const smell = Number(scores.smell) || 0;
+                            const aftertaste = Number(scores.aftertaste) || 0;
+                            
+                            const avg = (taste + texture + smell + aftertaste) / 4;
+                            map[name].total += avg;
+                            map[name].count += 1;
+                        });
+                    }
+                });
+
+                const finalMap: Record<string, { average: number; count: number }> = {};
+                Object.keys(map).forEach(key => {
+                    finalMap[key] = {
+                        average: map[key].total / map[key].count,
+                        count: map[key].count
+                    };
+                });
+                setCookieRatings(finalMap);
+            }
+        };
+        fetchRatings();
+    }, []);
+
     return(
         <section id="menu" className="py-24 bg-[#fffdf7] relative overflow-hidden scroll-mt-40 md:scroll-mt-48">
             {/* Decorative background elements */}
@@ -182,6 +221,18 @@ export default function Menu(){
                                     </span>
                                 )}
                                 <h3 className="text-5xl md:text-6xl font-black italic tracking-tighter mb-4 text-black">{item.name}</h3>
+                                {cookieRatings[item.name] && (
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <div className="flex text-yellow-400">
+                                            {[1, 2, 3, 4, 5].map((star) => (
+                                                <svg key={star} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={star <= Math.round(cookieRatings[item.name].average) ? "currentColor" : "none"} stroke="currentColor" strokeWidth={star <= Math.round(cookieRatings[item.name].average) ? 0 : 2} className="w-6 h-6">
+                                                    <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clipRule="evenodd" />
+                                                </svg>
+                                            ))}
+                                        </div>
+                                        <span className="text-sm font-bold text-gray-500">({cookieRatings[item.name].average.toFixed(1)} • {cookieRatings[item.name].count} reviews)</span>
+                                    </div>
+                                )}
                                 <p className="text-gray-800 text-lg mb-8 leading-relaxed group-hover:text-gray-900 font-medium transition-colors duration-300">
                                     {item.description}
                                 </p>

@@ -43,11 +43,11 @@ export default function OrderModal({ isOpen, onClose, preSelectedCookie }: Order
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Your Name</label>
+            <label className="block text-xs font-bold uppercase tracking-wider text-black mb-1">Your Name</label>
             <input 
               required
               type="text" 
-              className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-black focus:ring-0 outline-none transition-all font-medium"
+              className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-black focus:ring-0 outline-none transition-all font-medium text-black"
               placeholder="John Doe"
               value={formData.name}
               onChange={(e) => setFormData({...formData, name: e.target.value})}
@@ -56,23 +56,23 @@ export default function OrderModal({ isOpen, onClose, preSelectedCookie }: Order
           
           <div className="flex gap-4">
             <div className="flex-1">
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Email</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-black mb-1">Email</label>
                 <input 
                 required
                 type="email" 
-                className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-black focus:ring-0 outline-none transition-all font-medium"
+                className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-black focus:ring-0 outline-none transition-all font-medium text-black"
                 placeholder="john@example.com"
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
                 />
             </div>
             <div className="w-24">
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Qty</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-black mb-1">Qty</label>
                 <input 
                 required
                 type="number" 
                 min="1"
-                className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-black focus:ring-0 outline-none transition-all font-medium"
+                className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-black focus:ring-0 outline-none transition-all font-medium text-black"
                 value={formData.quantity}
                 onChange={(e) => setFormData({...formData, quantity: parseInt(e.target.value)})}
                 />
@@ -80,11 +80,11 @@ export default function OrderModal({ isOpen, onClose, preSelectedCookie }: Order
            </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Delivery Address</label>
+            <label className="block text-xs font-bold uppercase tracking-wider text-black mb-1">Delivery Address</label>
             <textarea 
               required
               rows={3}
-              className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-black focus:ring-0 outline-none transition-all font-medium resize-none"
+              className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-black focus:ring-0 outline-none transition-all font-medium resize-none text-black"
               placeholder="Street, City, Zip Code"
               value={formData.address}
               onChange={(e) => setFormData({...formData, address: e.target.value})}

@@ -36,6 +36,9 @@ export default function Footer(){
                         <Link href="/track-order" className="text-sm font-bold uppercase tracking-widest hover:text-white transition-colors duration-300">
                             Track Order
                         </Link>
+                        <Link href="/feedback" className="text-sm font-bold uppercase tracking-widest hover:text-white transition-colors duration-300">
+                            Feedback
+                        </Link>
                         <Link href="/contact" className="text-sm font-bold uppercase tracking-widest hover:text-white transition-colors duration-300">
                             Contact
                         </Link>

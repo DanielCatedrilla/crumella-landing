@@ -10,7 +10,8 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [vouchers, setVouchers] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'orders' | 'vouchers' | 'statistics'>('orders');
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'orders' | 'vouchers' | 'statistics' | 'feedbacks'>('orders');
   const [password, setPassword] = useState("");
   const [orderFilter, setOrderFilter] = useState('All');
 
@@ -25,6 +26,7 @@ export default function AdminPage() {
     if (isAuthenticated) {
       fetchOrders();
       fetchVouchers();
+      fetchFeedbacks();
 
       const channel = supabase
         .channel('realtime orders')
@@ -40,8 +42,6 @@ export default function AdminPage() {
   }, [isAuthenticated]);
 
   const stats = React.useMemo(() => {
-    if (!orders.length) return { monthly: [], bestSeller: null, totalBoxes: 0 };
-
     const monthlyMap: Record<string, { count: number; revenue: number }> = {};
     const productMap: Record<string, number> = {};
     let totalBoxes = 0;
@@ -84,8 +84,47 @@ export default function AdminPage() {
       }
     });
 
-    return { monthly, bestSeller, totalBoxes };
-  }, [orders]);
+    // Cookie Ratings Logic
+    const cookieRatingsMap: Record<string, {
+      totalScore: number;
+      count: number;
+      taste: number;
+      texture: number;
+      smell: number;
+      aftertaste: number;
+    }> = {};
+
+    feedbacks.forEach((fb) => {
+      if (fb.ratings) {
+        Object.entries(fb.ratings).forEach(([cookieName, scores]: [string, any]) => {
+          if (!cookieRatingsMap[cookieName]) {
+            cookieRatingsMap[cookieName] = { totalScore: 0, count: 0, taste: 0, texture: 0, smell: 0, aftertaste: 0 };
+          }
+          const entry = cookieRatingsMap[cookieName];
+          entry.count += 1;
+          entry.taste += (scores.taste || 0);
+          entry.texture += (scores.texture || 0);
+          entry.smell += (scores.smell || 0);
+          entry.aftertaste += (scores.aftertaste || 0);
+          
+          const instanceAvg = ((scores.taste || 0) + (scores.texture || 0) + (scores.smell || 0) + (scores.aftertaste || 0)) / 4;
+          entry.totalScore += instanceAvg;
+        });
+      }
+    });
+
+    const cookieRatings = Object.entries(cookieRatingsMap).map(([name, data]) => ({
+      name,
+      average: data.totalScore / data.count,
+      count: data.count,
+      taste: data.taste / data.count,
+      texture: data.texture / data.count,
+      smell: data.smell / data.count,
+      aftertaste: data.aftertaste / data.count,
+    })).sort((a, b) => b.average - a.average);
+
+    return { monthly, bestSeller, totalBoxes, cookieRatings };
+  }, [orders, feedbacks]);
 
   const filteredOrders = orders.filter(order => orderFilter === 'All' || order.status === orderFilter);
 
@@ -149,6 +188,32 @@ export default function AdminPage() {
 
     if (!error) {
       setVouchers(data || []);
+    }
+  };
+
+  const fetchFeedbacks = async () => {
+    const { data, error } = await supabase
+      .from('feedbacks')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!error) {
+      setFeedbacks(data || []);
+    }
+  };
+
+  const deleteFeedback = async (id: any) => {
+    if (!window.confirm("Are you sure you want to delete this feedback?")) return;
+
+    const { error } = await supabase
+      .from('feedbacks')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      alert("Error deleting feedback");
+    } else {
+      setFeedbacks((prev) => prev.filter((fb) => fb.id !== id));
     }
   };
 
@@ -404,6 +469,12 @@ export default function AdminPage() {
             className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors whitespace-nowrap ${activeTab === 'statistics' ? 'bg-black text-white' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
           >
             Statistics
+          </button>
+          <button 
+            onClick={() => setActiveTab('feedbacks')}
+            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors whitespace-nowrap ${activeTab === 'feedbacks' ? 'bg-black text-white' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
+          >
+            Feedbacks
           </button>
         </div>
 
@@ -816,7 +887,7 @@ export default function AdminPage() {
           </>
         ) : activeTab === 'vouchers' ? (
           <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-200">
-            <div className="overflow-x-auto">
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead className="bg-gray-100 border-b border-gray-200">
                   <tr>
@@ -864,8 +935,44 @@ export default function AdminPage() {
                 </tbody>
               </table>
             </div>
+            {/* Mobile View */}
+            <div className="md:hidden p-4 space-y-4">
+              {vouchers.map((voucher) => (
+                <div key={voucher.id} className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="font-black text-lg text-gray-900">{voucher.code}</div>
+                      <div className="text-sm text-gray-700 font-medium">
+                        {voucher.type === 'percentage' ? `${voucher.value}% OFF` : `₱${voucher.value} OFF`}
+                      </div>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                      voucher.used_count >= voucher.max_uses ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+                    }`}>
+                      {voucher.used_count >= voucher.max_uses ? 'Fully Redeemed' : 'Active'}
+                    </span>
+                  </div>
+                  <div className="border-t border-gray-100 my-3"></div>
+                  <div className="text-xs text-gray-600 space-y-1">
+                    <div><strong>Usage:</strong> {voucher.used_count} / {voucher.max_uses || '∞'}</div>
+                    <div><strong>Expires:</strong> {voucher.expires_at ? new Date(voucher.expires_at).toLocaleDateString() : 'No Expiry'}</div>
+                  </div>
+                  <div className="mt-3">
+                    <button 
+                      onClick={() => resetVoucher(voucher.id)}
+                      className="text-blue-600 hover:text-blue-800 text-xs font-bold underline"
+                    >
+                      Reset Usage
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {vouchers.length === 0 && (
+                <div className="text-center text-gray-500 py-10">No vouchers found.</div>
+              )}
+            </div>
           </div>
-        ) : (
+        ) : activeTab === 'statistics' ? (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
@@ -927,6 +1034,158 @@ export default function AdminPage() {
                 </div>
               ) : (
                 <div className="text-center text-gray-500 py-10">No data available for graph.</div>
+              )}
+            </div>
+
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+              <h3 className="text-lg font-bold text-gray-900 mb-6">Cookie Ratings</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {stats.cookieRatings.map((rating) => (
+                  <div key={rating.name} className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-bold text-black">{rating.name}</h4>
+                      <div className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-bold flex items-center gap-1">
+                        <span>★</span> {rating.average.toFixed(1)}
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-600 font-medium mb-3">{rating.count} reviews</div>
+                    <div className="space-y-1">
+                      {['Taste', 'Texture', 'Smell', 'Aftertaste'].map(criteria => {
+                          const key = criteria.toLowerCase() as keyof typeof rating;
+                          const val = rating[key] as number;
+                          return (
+                            <div key={criteria} className="flex items-center gap-2 text-[10px]">
+                              <span className="w-16 text-gray-700 font-medium">{criteria}</span>
+                              <div className="flex-1 bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                                <div className="bg-black h-full rounded-full" style={{ width: `${(val / 5) * 100}%` }}></div>
+                              </div>
+                              <span className="w-6 text-right font-bold text-black">{val.toFixed(1)}</span>
+                            </div>
+                          )
+                      })}
+                    </div>
+                  </div>
+                ))}
+                {stats.cookieRatings.length === 0 && (
+                  <div className="col-span-full text-center text-gray-500 py-4">No ratings available yet.</div>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-200">
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-gray-100 border-b border-gray-200">
+                  <tr>
+                    <th className="p-4 font-bold text-gray-700">Date</th>
+                    <th className="p-4 font-bold text-gray-700">Customer</th>
+                    <th className="p-4 font-bold text-gray-700">Ratings</th>
+                    <th className="p-4 font-bold text-gray-700">Feedback</th>
+                    <th className="p-4 font-bold text-gray-700">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {feedbacks.map((fb) => (
+                    <tr key={fb.id} className="hover:bg-gray-50">
+                      <td className="p-4 text-gray-700 whitespace-nowrap align-top">
+                        {new Date(fb.created_at).toLocaleDateString()}
+                        <div className="text-xs text-gray-500">{new Date(fb.created_at).toLocaleTimeString()}</div>
+                      </td>
+                      <td className="p-4 align-top">
+                        <div className="font-bold text-black">{fb.full_name}</div>
+                        <div className="text-xs text-blue-700 font-bold">{fb.facebook_name}</div>
+                        <div className="text-xs text-gray-600">{fb.email}</div>
+                      </td>
+                      <td className="p-4 align-top">
+                        {fb.ratings && Object.entries(fb.ratings).map(([cookie, scores]: [string, any]) => (
+                          <div key={cookie} className="mb-3 last:mb-0 bg-gray-50 p-2 rounded-lg border border-gray-100">
+                            <div className="font-bold text-xs mb-1 text-black">{cookie}</div>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] text-gray-700">
+                              <div>Taste: <span className="font-bold text-black">{scores.taste}/5</span></div>
+                              <div>Texture: <span className="font-bold text-black">{scores.texture}/5</span></div>
+                              <div>Smell: <span className="font-bold text-black">{scores.smell}/5</span></div>
+                              <div>Aftertaste: <span className="font-bold text-black">{scores.aftertaste}/5</span></div>
+                            </div>
+                          </div>
+                        ))}
+                      </td>
+                      <td className="p-4 align-top max-w-xs">
+                        <div className="mb-2">
+                          <span className="text-[10px] uppercase font-bold text-gray-600">Favorite:</span>
+                          <div className="text-sm font-medium text-black">{fb.favorite_cookie || '-'}</div>
+                        </div>
+                        <div>
+                          <span className="text-[10px] uppercase font-bold text-gray-600">Thoughts:</span>
+                          <div className="text-sm italic text-gray-800">"{fb.final_thoughts || '-'}"</div>
+                        </div>
+                      </td>
+                      <td className="p-4 align-top">
+                        <button 
+                          onClick={() => deleteFeedback(fb.id)}
+                          className="text-red-600 hover:text-red-800 text-xs font-bold underline"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {feedbacks.length === 0 && (
+                    <tr><td colSpan={5} className="p-8 text-center text-gray-500">No feedbacks found.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {/* Mobile View */}
+            <div className="md:hidden p-4 space-y-4">
+              {feedbacks.map((fb) => (
+                <div key={fb.id} className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                  <div className="mb-3">
+                    <div className="font-bold text-black">{fb.full_name}</div>
+                    <div className="text-xs text-gray-500">{new Date(fb.created_at).toLocaleString()}</div>
+                  </div>
+                  
+                  {fb.ratings && Object.keys(fb.ratings).length > 0 && (
+                    <div className="mb-3">
+                      <div className="text-xs font-bold uppercase text-gray-500 mb-2">Ratings</div>
+                      <div className="space-y-2">
+                        {Object.entries(fb.ratings).map(([cookie, scores]: [string, any]) => (
+                          <div key={cookie} className="bg-white p-2 rounded-lg border border-gray-200">
+                            <div className="font-bold text-xs mb-1 text-black">{cookie}</div>
+                            <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px] text-gray-700">
+                              <div>Taste: <span className="font-bold text-black">{scores.taste}/5</span></div>
+                              <div>Texture: <span className="font-bold text-black">{scores.texture}/5</span></div>
+                              <div>Smell: <span className="font-bold text-black">{scores.smell}/5</span></div>
+                              <div>Aftertaste: <span className="font-bold text-black">{scores.aftertaste}/5</span></div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="border-t border-gray-200 pt-3">
+                    <div className="mb-2">
+                      <span className="text-[10px] uppercase font-bold text-gray-600">Favorite:</span>
+                      <div className="text-sm font-medium text-black">{fb.favorite_cookie || '-'}</div>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-gray-600">Thoughts:</span>
+                      <div className="text-sm italic text-gray-800">"{fb.final_thoughts || '-'}"</div>
+                    </div>
+                    <div className="mt-3 flex justify-end">
+                      <button 
+                        onClick={() => deleteFeedback(fb.id)}
+                        className="text-red-600 hover:text-red-800 text-xs font-bold underline"
+                      >
+                        Delete Feedback
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {feedbacks.length === 0 && (
+                <div className="text-center text-gray-500 py-10">No feedbacks found.</div>
               )}
             </div>
           </div>
