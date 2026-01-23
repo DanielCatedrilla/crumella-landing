@@ -222,13 +222,28 @@ export default function Menu(){
                                 )}
                                 <h3 className="text-5xl md:text-6xl font-black italic tracking-tighter mb-4 text-black">{item.name}</h3>
                                 {cookieRatings[item.name] && (
-                                    <div className="flex items-center gap-2 mb-4">
+                                    <div className="flex items-center justify-center md:justify-start gap-2 mb-4">
                                         <div className="flex text-yellow-400">
-                                            {[1, 2, 3, 4, 5].map((star) => (
-                                                <svg key={star} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={star <= Math.round(cookieRatings[item.name].average) ? "currentColor" : "none"} stroke="currentColor" strokeWidth={star <= Math.round(cookieRatings[item.name].average) ? 0 : 2} className="w-6 h-6">
-                                                    <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clipRule="evenodd" />
-                                                </svg>
-                                            ))}
+                                            {[1, 2, 3, 4, 5].map((star) => {
+                                                const rating = cookieRatings[item.name].average;
+                                                const fillPercentage = Math.max(0, Math.min(100, (rating - (star - 1)) * 100));
+                                                
+                                                return (
+                                                    <div key={star} className="relative w-6 h-6">
+                                                        {/* Background Star (Outline) */}
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-full h-full absolute top-0 left-0">
+                                                            <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clipRule="evenodd" />
+                                                        </svg>
+                                                        
+                                                        {/* Foreground Star (Filled) - Clipped */}
+                                                        <div style={{ width: `${fillPercentage}%` }} className="absolute top-0 left-0 h-full overflow-hidden">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="none" className="w-6 h-6 max-w-none">
+                                                                <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clipRule="evenodd" />
+                                                            </svg>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                         <span className="text-sm font-bold text-gray-500">({cookieRatings[item.name].average.toFixed(1)} • {cookieRatings[item.name].count} reviews)</span>
                                     </div>
