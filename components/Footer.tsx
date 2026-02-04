@@ -6,7 +6,7 @@ import { SiFacebook, SiInstagram, SiTiktok } from 'react-icons/si';
 export default function Footer(){
     return(
         <footer className="w-full bg-[#a6dff6] text-black border-t border-white/50">
-            <div className="max-w-7xl mx-auto px-6 py-16">
+            <div className="max-w-7xl mx-auto px-6 py-16 relative z-10">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-10 md:gap-0">
                     
                     {/* Brand / Left */}

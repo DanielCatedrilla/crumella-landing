@@ -17,26 +17,26 @@ const SLIDES = [
   },
   {
     id: 2,
-    src: "/DS/DS2.png",
-    mobileSrc: "/MS/MS2.png",
+    src: "/DS/DS6.png",
+    mobileSrc: "/MS/MS6.png",
     alt: "Hero Slide 2",
   },
   {
     id: 3,
-    src: "/DS/DS3.png",
-    mobileSrc: "/MS/MS3.png",
+    src: "/DS/DS7.png",
+    mobileSrc: "/MS/MS7.png",
     alt: "Hero Slide 3",
   },
   {
     id: 4,
-    src: "/DS/DS4.png",
-    mobileSrc: "/MS/MS4.png",
+    src: "/DS/DS8.png",
+    mobileSrc: "/MS/MS8.png",
     alt: "Hero Slide 4",
   },
   {
     id: 5,
-    src: "/DS/DS5.png",
-    mobileSrc: "/MS/MS5.png",
+    src: "/DS/DS9.png",
+    mobileSrc: "/MS/MS9.png",
     alt: "Hero Slide 5",
   },
 ];
@@ -51,7 +51,7 @@ const Slider = () => {
 
   return (
     <section className="bg-[#fffdf7]">
-    <div className="h-[60vh] md:h-[85vh] w-full pt-16 relative">
+    <div className="h-[60vh] md:h-[85vh] w-full pt-16 relative z-10">
       <Swiper
         className="h-full w-full"
         spaceBetween={0}

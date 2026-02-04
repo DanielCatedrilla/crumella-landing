@@ -77,7 +77,7 @@ export default function Feedback() {
 
   return (
     <section className="pt-24 pb-0 bg-[#a6dff6] relative overflow-hidden">
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
         
         {/* Header */}
         <div className="text-center mb-16">

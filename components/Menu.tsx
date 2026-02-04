@@ -17,25 +17,32 @@ export type MenuItem = {
 };
 
 export const MENU_ITEMS: MenuItem[] = [
-    {
+       {
         id: 1,
-        name: "Biscoff® Cookie",
-        description: "Made with Lotus Biscoff®, this cookie delivers a rich caramelized flavor with warm, spiced notes in every bite.",
-        src: "/MENU2/BC.png",
-        badge: "New Flavor",
-        logoSrc: "/BiscoffLogo2.jpg",
+        name: "Strawberry Cream Cheese Cookie",
+        description: "A soft cookie layered with sweet strawberry notes and creamy cream cheese",
+        src: "/MENU2/SC.png",
+        badge: "Valentine's Exclusive",
         category: "Single Flavors",
     },
     {
         id: 2,
-        name: "Matcha Cookie",
-        description: "A refined balance of earthy matcha and subtle sweetness, baked into a soft, flavorful cookie that’s calm, elegant, and deeply satisfying.",
-        src: "/MENU2/MC.png",
-        badge: "New Flavor",
+        name: "Biscoff® Cookie",
+        description: "Made with Lotus Biscoff®, this cookie delivers a rich caramelized flavor with warm, spiced notes in every bite.",
+        src: "/MENU2/BC.png",
+        badge: "Best Seller",
+        logoSrc: "/BiscoffLogo2.jpg",
         category: "Single Flavors",
     },
     {
         id: 3,
+        name: "Matcha Cookie",
+        description: "A refined balance of earthy matcha and subtle sweetness, baked into a soft, flavorful cookie that’s calm, elegant, and deeply satisfying.",
+        src: "/MENU2/MC.png",
+        category: "Single Flavors",
+    },
+    {
+        id: 4,
         name: "Chocolate Chunk Cookie",
         description: "Classic and timeless, this cookie features generous chunks of premium chocolate baked into a soft, chewy base.",
         src: "/MENU2/CCH.png",
@@ -43,21 +50,21 @@ export const MENU_ITEMS: MenuItem[] = [
         category: "Single Flavors",
     },
     {
-        id: 4,
+        id: 5,
         name: "Double Chocolate Cookie",
         description: "For those who love it rich, this cookie blends a chocolate base with melted chocolate pieces for a deep, indulgent bite that doesn’t hold back.",
         src: "/MENU2/DCH.png",
         category: "Single Flavors",
     },
     {
-        id: 5,
+        id: 6,
         name: "S'mores Cookie",
         description: "Inspired by the classic treat, this cookie combines chocolate, a soft marshmallow center, and a golden base.",
         src: "/MENU2/SM.png",
         category: "Single Flavors",
     },
     {
-        id: 6,
+        id: 7,
         name: "Red Velvet Cookie",
         description: "A soft red velvet cookie with a creamy cream cheese filling inside.",
         src: "/MENU2/RV.png",
@@ -67,24 +74,32 @@ export const MENU_ITEMS: MenuItem[] = [
 ];
 
 export const ORDER_ITEMS: MenuItem[] = [
-    {
+       {
         id: 1,
+        name: "Strawberry Cream Cheese Cookie",
+        description: "A soft cookie layered with sweet strawberry notes and creamy cream cheese",
+        src: "/CS/SC.png",
+        badge: "Valentine's Exclusive",
+        category: "Box of 4 - Single Flavor Bundles",
+        price: 380.00,
+    },
+    {
+        id: 2,
         name: "Biscoff® Cookie",
-        badge: "New flavor",
+        badge: "Best Seller",
         src: "/CS/Biscoff.png",
         category: "Box of 4 - Single Flavor Bundles",
         price: 350.00,
     },
     {
-        id: 2,
+        id: 3,
         name: "Matcha Cookie",
-        badge: "New flavor",
         src: "/CS/Matcha.png",
         category: "Box of 4 - Single Flavor Bundles",
         price: 350.00,
     },
     {
-        id: 3,
+        id: 4,
         name: "Chocolate Chunk Cookie",
         badge: "All time favorite",
         src: "/CS/CCH.png",
@@ -92,21 +107,21 @@ export const ORDER_ITEMS: MenuItem[] = [
         price: 300.00,
     },
     {
-        id: 4,
+        id: 5,
         name: "Double Chocolate Cookie",
         src: "/CS/DCH.png",
         category: "Box of 4 - Single Flavor Bundles",
         price: 320.00,
     },
     {
-        id: 5,
+        id: 6,
         name: "S'mores Cookie",
         src: "/CS/SM.png",
         category: "Box of 4 - Single Flavor Bundles",
         price: 320.00,
     },
     {
-        id: 6,
+        id: 7,
         name: "Red Velvet Cookie",
         badge: "Best seller",
         src: "/CS/RV.png",
@@ -114,20 +129,35 @@ export const ORDER_ITEMS: MenuItem[] = [
         price: 380.00,
     },
     {
-        id: 7,
-        name: "Classic Assorted Bundle",
-        badge: "Best seller",
-        src: "/CS/CA.png",
-        category: "Box of 4 - Assorted Bundles",
-        price: 350.00,
+        id: 10,
+        name: "Chocolate Chunk Minis w/ Nutella Dip",
+        badge: "New Arrival",
+        src: "/HS/HS7.png",
+        category: "Box of 12 - Crumella Minis",
+        price: 199.00,
     },
     {
-        id: 8,
+        id: 9,
         name: "Premium Assorted Bundle",
-        badge: "New bundle",
+        badge: "Best Seller",
         src: "/CS/PA.png",
         category: "Box of 4 - Assorted Bundles",
         price: 380.00,
+    },
+    {
+        id: 11,
+        name: "Valentine's Bundle",
+        badge: "Exclusive Bundle",
+        src: "/CS/VB.png",
+        category: "Box of 4 - Assorted Bundles",
+        price: 385.00,
+    },
+    {
+        id: 8,
+        name: "Classic Assorted Bundle",
+        src: "/CS/CA.png",
+        category: "Box of 4 - Assorted Bundles",
+        price: 350.00,
     },
 ];
 
@@ -188,7 +218,7 @@ export default function Menu(){
                         <div 
                             key={item.id} 
                             id={`cookie-flavor-${item.id}`}
-                            className={`group flex flex-col ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'} items-center bg-white rounded-[3rem] p-6 md:p-10 gap-6 md:gap-10 shadow-xl border border-gray-100 transition-all duration-500 hover:bg-[#a7dff4] hover:shadow-2xl hover:-translate-y-2 scroll-mt-28 relative`}
+                            className={`group flex flex-col ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'} items-center bg-white rounded-[3rem] p-6 md:p-10 gap-6 md:gap-10 transition-all duration-500 hover:-translate-y-2 scroll-mt-28 relative ${item.badge === "Valentine's Exclusive" ? "shadow-[0_0_30px_rgba(236,72,153,0.4)] border-2 border-pink-200 hover:shadow-[0_0_50px_rgba(236,72,153,0.6)] hover:bg-pink-50" : "shadow-xl border border-gray-100 hover:bg-[#a7dff4] hover:shadow-2xl"}`}
                         >
                             {item.logoSrc && (
                                 <div className="absolute top-8 right-8 w-24 h-12 md:w-32 md:h-16 z-30 transform rotate-6 hover:rotate-0 transition-transform duration-300">
@@ -216,8 +246,13 @@ export default function Menu(){
                             {/* Content Side */}
                             <div className="w-full md:w-1/2 text-center md:text-left">
                                 {item.badge && (
-                                    <span className="inline-block bg-yellow-400 text-black text-xs font-bold px-4 py-2 rounded-full mb-4 uppercase tracking-wider shadow-lg transform transition-transform group-hover:scale-105">
+                                    <span className={`inline-block text-xs font-bold px-4 py-2 rounded-full mb-4 uppercase tracking-wider shadow-lg transform transition-transform group-hover:scale-105 relative ${item.badge === "Valentine's Exclusive" ? "bg-pink-200 text-pink-800" : "bg-yellow-400 text-black"}`}>
                                         {item.badge}
+                                        {item.badge === "Valentine's Exclusive" && (
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 absolute -top-3 -right-3 text-red-500 drop-shadow-sm">
+                                                <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" />
+                                            </svg>
+                                        )}
                                     </span>
                                 )}
                                 <h3 className="text-5xl md:text-6xl font-black italic tracking-tighter mb-4 text-black">{item.name}</h3>

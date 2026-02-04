@@ -159,15 +159,6 @@ function LocationMarker({ position, setPosition, onLocationSelect }: { position:
 
 export default function LocationPicker({ onLocationSelect, hasError }: { onLocationSelect: (lat: number, lng: number) => void, hasError?: boolean }) {
   const [position, setPosition] = useState<L.LatLng | null>(null);
-  const [map, setMap] = useState<L.Map | null>(null);
-
-  useEffect(() => {
-    // On component unmount, this cleanup function will be called
-    return () => {
-      // Explicitly remove the map instance to prevent container reuse errors in development/HMR
-      map?.remove();
-    };
-  }, [map]);
 
   return (
     <div className={`h-96 md:h-64 w-full rounded-xl overflow-hidden border-2 ${hasError ? 'border-red-500' : 'border-gray-200'} z-0 relative mt-4 transition-colors duration-300`}>

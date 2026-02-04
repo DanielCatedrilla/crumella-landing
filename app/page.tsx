@@ -7,13 +7,16 @@ import Highlight from "@/components/Highlight";
 import Feedback from "@/components/Feedback";
 import CTA from "@/components/CTA";
 import ScrollToTop from "@/components/ScrollToTop";
+import FallingHearts from "@/components/FallingHearts";
+
 
 
 
 
 export default function home(){
   return(
-    <main className="min-h-screen relative bg-white flex flex-col">
+      <main className="min-h-screen relative bg-white flex flex-col overflow-x-hidden">
+      <FallingHearts/>
       <Navbar/>
       <Hero/>
       <Highlight/>

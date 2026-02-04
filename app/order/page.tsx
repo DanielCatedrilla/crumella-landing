@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ORDER_ITEMS } from "../../components/Menu";
@@ -177,6 +177,16 @@ export default function OrderPage() {
     }
     return `CRML-${randomPart}`;
   };
+
+  const handleLocationSelect = useCallback((lat: number, lng: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      googleMapsLink: `https://www.google.com/maps?q=${lat},${lng}`,
+      latitude: lat,
+      longitude: lng
+    }));
+    setLocationError(false);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -469,15 +479,7 @@ export default function OrderPage() {
                       <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Pin Exact Location <span className="text-red-500">*</span></label>
                       <LocationPicker 
                         hasError={locationError}
-                        onLocationSelect={(lat, lng) => {
-                          setFormData({
-                            ...formData, 
-                            googleMapsLink: `https://www.google.com/maps?q=${lat},${lng}`,
-                            latitude: lat,
-                            longitude: lng
-                          });
-                          setLocationError(false);
-                        }} 
+                        onLocationSelect={handleLocationSelect}
                       />
                     </div>
                   </div>
