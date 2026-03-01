@@ -8,8 +8,8 @@ export default function Highlight() {
   const [currentCreatorIndex, setCurrentCreatorIndex] = useState(0);
   const [currentMinisIndex, setCurrentMinisIndex] = useState(0);
   const images = [
-    "/HS/HS5.png", // ENTER YOUR PHOTO SRC HERE
-    "/HS/HS9.png" // ENTER YOUR PHOTO SRC HERE
+    "/HS/HS3.png", // ENTER YOUR PHOTO SRC HERE
+    "/HS/HS4.png" // ENTER YOUR PHOTO SRC HERE
   ];
   
   const creatorImages = [

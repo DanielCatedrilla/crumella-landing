@@ -17,14 +17,6 @@ export type MenuItem = {
 };
 
 export const MENU_ITEMS: MenuItem[] = [
-       {
-        id: 1,
-        name: "Strawberry Cream Cheese Cookie",
-        description: "A soft cookie layered with sweet strawberry notes and creamy cream cheese",
-        src: "/MENU2/SC.png",
-        badge: "Valentine's Exclusive",
-        category: "Single Flavors",
-    },
     {
         id: 2,
         name: "Biscoff® Cookie",
@@ -74,15 +66,7 @@ export const MENU_ITEMS: MenuItem[] = [
 ];
 
 export const ORDER_ITEMS: MenuItem[] = [
-       {
-        id: 1,
-        name: "Strawberry Cream Cheese Cookie",
-        description: "A soft cookie layered with sweet strawberry notes and creamy cream cheese",
-        src: "/CS/SC.png",
-        badge: "Valentine's Exclusive",
-        category: "Box of 4 - Single Flavor Bundles",
-        price: 380.00,
-    },
+
     {
         id: 2,
         name: "Biscoff® Cookie",
@@ -143,14 +127,6 @@ export const ORDER_ITEMS: MenuItem[] = [
         src: "/CS/PA.png",
         category: "Box of 4 - Assorted Bundles",
         price: 380.00,
-    },
-    {
-        id: 11,
-        name: "Valentine's Bundle",
-        badge: "Exclusive Bundle",
-        src: "/CS/VB.png",
-        category: "Box of 4 - Assorted Bundles",
-        price: 385.00,
     },
     {
         id: 8,
