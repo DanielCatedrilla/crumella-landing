@@ -241,6 +241,7 @@ function AnimatedCounter({ value }: { value: number }) {
 
 interface RewardsState {
   view: 'login' | 'activate' | 'dashboard' | 'loading';
+  isLoading: boolean;
   user: any | null;
   selectedRedeemable: any | null;
   error: string;
@@ -255,6 +256,7 @@ interface RewardsState {
 
 const initialState: RewardsState = {
   view: 'login',
+  isLoading: false,
   user: null,
   selectedRedeemable: null,
   error: '',
@@ -283,15 +285,15 @@ function rewardsReducer(state: RewardsState, action: RewardsAction): RewardsStat
     case 'SET_FIELD':
       return { ...state, [action.field]: action.value };
     case 'API_START':
-      return { ...state, view: 'loading', error: '' };
+      return { ...state, isLoading: true, error: '' };
     case 'LOGIN_SUCCESS':
     case 'ACTIVATE_SUCCESS':
       // On success, clear form fields and show dashboard
-      return { ...initialState, view: 'dashboard', user: action.payload };
+      return { ...initialState, view: 'dashboard', user: action.payload, isLoading: false };
     case 'LOGIN_FAILURE':
-      return { ...state, view: 'login', error: action.payload };
+      return { ...state, isLoading: false, error: action.payload };
     case 'ACTIVATE_FAILURE':
-      return { ...state, view: 'activate', error: action.payload };
+      return { ...state, isLoading: false, error: action.payload };
     case 'LOGOUT':
       return { ...initialState };
     case 'SWITCH_VIEW':
@@ -306,7 +308,7 @@ function rewardsReducer(state: RewardsState, action: RewardsAction): RewardsStat
 
 export default function RewardsPage() {
   const [state, dispatch] = React.useReducer(rewardsReducer, initialState);
-  const { view, user, selectedRedeemable, error, loginUniqueId, loginLastName, activateUniqueId, activateFirstName, activateLastName, activatePhone, activateEmail } = state;
+  const { view, isLoading, user, selectedRedeemable, error, loginUniqueId, loginLastName, activateUniqueId, activateFirstName, activateLastName, activatePhone, activateEmail } = state;
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -521,10 +523,10 @@ export default function RewardsPage() {
 
                 <button 
                   type="submit" 
-                  disabled={view === 'loading'}
+                  disabled={isLoading}
                   className="w-full bg-black text-white font-bold py-4 rounded-full hover:bg-[#a7dff4] hover:text-black hover:scale-[1.02] active:scale-95 transition-all duration-300 shadow-lg text-lg disabled:opacity-50 disabled:cursor-not-allowed mt-2"
                 >
-                  {view === 'loading' ? "Activating..." : "Activate & View Rewards"}
+                  {isLoading ? "Activating..." : "Activate & View Rewards"}
                 </button>
               </form>
               
@@ -579,10 +581,10 @@ export default function RewardsPage() {
 
               <button 
                 type="submit" 
-                disabled={view === 'loading'}
+                disabled={isLoading}
                 className="w-full bg-black text-white font-bold py-4 rounded-full hover:bg-[#a7dff4] hover:text-black hover:scale-[1.02] active:scale-95 transition-all duration-300 shadow-lg text-lg disabled:opacity-50 disabled:cursor-not-allowed mt-2"
               >
-                {view === 'loading' ? "Verifying..." : "View Rewards"}
+                {isLoading ? "Verifying..." : "View Rewards"}
               </button>
             </form>
 
