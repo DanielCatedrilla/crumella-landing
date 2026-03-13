@@ -459,10 +459,10 @@ export default function PaymentPage() {
                             </div>
                         );
                     })}
-                    {order.deliveryFee > 0 && (
+                    {order.customer?.deliveryFee > 0 && (
                         <div className="flex justify-between items-center text-sm border-t border-dashed border-gray-200 pt-2 mt-2">
                              <span className="text-gray-600">Delivery Fee</span>
-                             <span className="font-medium text-gray-800">₱{order.deliveryFee.toFixed(2)}</span>
+                             <span className="font-medium text-gray-800">₱{order.customer.deliveryFee.toFixed(2)}</span>
                         </div>
                     )}
                 </div>
