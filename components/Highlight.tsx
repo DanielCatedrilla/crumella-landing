@@ -15,7 +15,8 @@ export default function Highlight() {
   const creatorImages = [
     "/FC/A1.jpg", // ENTER YOUR PHOTO SRC HERE
     "/FC/A2.jpg",  // ENTER YOUR PHOTO SRC HERE
-    "/FC/FCC.png"
+    "/FC/FCC.png",
+    "/FC/A5.jpg"
   ];
 
   const minisImages = [
@@ -54,7 +55,7 @@ export default function Highlight() {
   };
 
   return (
-    <section className="w-full py-12 px-6 relative z-10">
+    <section id="whats-new" className="w-full py-12 px-6 relative z-10 scroll-mt-24">
       <div className="max-w-7xl mx-auto mb-12 text-center">
         <h2 className="text-5xl md:text-6xl font-black text-black tracking-tight mb-4">
           What's New in <span className="text-[#a6dff6]">Crumella</span>

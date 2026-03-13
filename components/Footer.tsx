@@ -30,6 +30,9 @@ export default function Footer(){
                         <Link href="/#menu" className="text-sm font-bold uppercase tracking-widest hover:text-white transition-colors duration-300">
                             Menu
                         </Link>
+                        <Link href="/points" className="text-sm font-bold uppercase tracking-widest hover:text-white transition-colors duration-300">
+                            Rewards
+                        </Link>
                         <Link href="/creators" className="text-sm font-bold uppercase tracking-widest hover:text-white transition-colors duration-300">
                             Creators
                         </Link>

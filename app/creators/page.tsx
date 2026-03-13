@@ -4,6 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
+import { Pagination, Navigation, Autoplay } from 'swiper/modules';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import 'swiper/css';
+import 'swiper/css/pagination';
+import 'swiper/css/navigation';
 
 const FadeIn = ({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -42,13 +47,14 @@ const FadeIn = ({ children, delay = 0, className = "" }: { children: React.React
 };
 
 export default function CreatorsPage() {
+  const [showAll, setShowAll] = useState(false);
   const creators = [
     { 
       id: 1, 
       name: "Jairo", 
       handle: "@_theonly.jairo",
       role: "Influencer", 
-      image: "/CC/Jairo.jpg",
+      image: "/CC/Jairo(1).jpg",
       thumbnail: "/THMB/Jairo.png", // Add your thumbnail path here
       videoUrl: "https://www.instagram.com/reel/DSByKgYkpDh/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==", // Add your embed video link here (e.g., https://www.youtube.com/embed/...)
       caption: "Delightful Cookies from @eatcrumella 🤤😍 Thanks for sending these out!🫶🏻",
@@ -81,7 +87,7 @@ export default function CreatorsPage() {
       name: "Elisha Bueno", 
       handle: "@elisha.bueno",
       role: "Influencer", 
-      image: "/CC/Elisha.jpg",
+      image: "/CC/Elisha(1).jpg",
       thumbnail: "/THMB/Elisha.png",
       videoUrl: "https://www.instagram.com/reel/DSFZboQEj9c/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==",
       caption: "POV: You found your new fave cookies 🍪 The crumble. The chunks. The gooeyness. I’m obsessed. ✨",
@@ -97,6 +103,53 @@ export default function CreatorsPage() {
       photos: ["/FC/A2.jpg", "/FC/A3.jpg", "/FC/A1.jpg"],
       videoUrl: "https://www.instagram.com/p/DR_A4K3EksI/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==", // Link to the specific post
       caption: "THE CRUNCH. THE CHEW. THE GOOEY MELT.",
+      videoColor: "bg-yellow-200"
+    },
+     { 
+      id: 6, 
+      name: "KL Estrada", 
+      handle: "@jklestradaaa",
+      role: "Artist", 
+      image: "/CC/KL.jpg", // Replace with actual profile image
+      // Add the 3 photos for the stack here
+      thumbnail: "/THMB/KL.jpg",
+      videoUrl: "https://www.instagram.com/reel/DVlYurEkzlk/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==", // Link to the specific post
+      caption: "Thank you so much, Crumella! 🍪 Super sarap ng cookies ninyo definitely worth trying! Highly recommended for all cookie lovers.",
+      videoColor: "bg-yellow-200"
+    },
+  ];
+
+
+  const iconixCreators = [
+    { 
+      id: 7, 
+      name: "KL Estrada", 
+      handle: "@jklestradaaa",
+      role: "Artist",
+      image: "/CC/KL.jpg",
+      thumbnail: "/THMB/KL.jpg",
+      videoUrl: "https://www.facebook.com/share/r/1N3P94dXkm/",
+      caption: "The first take from the Iconix crew! Absolutely loved these cookies.",
+      videoColor: "bg-purple-200"
+    },
+    { 
+      id: 8, 
+      name: "Jacob Smith", 
+      handle: "@ijacobsmithhh",
+      role: "Artist",
+      image: "/CC/Jacob.jpg",
+      thumbnail: "/THMB/Jacob.jpg",
+      videoUrl: "https://www.facebook.com/share/r/1Dbd3mwPxz/",
+      videoColor: "bg-pink-200"
+    },
+    { 
+      id: 9, 
+      name: "JC Miguel", 
+      handle: "@_.itsjcmiguel",
+      role: "Artist",
+      image: "/CC/JC.jpg",
+      thumbnail: "/THMB/JC.jpg",
+      videoUrl: "https://www.facebook.com/share/r/181ERTRMwy/",
       videoColor: "bg-yellow-200"
     },
   ];
@@ -134,9 +187,11 @@ export default function CreatorsPage() {
           </FadeIn>
 
           {/* Creators Sections */}
-          <div className="flex flex-col gap-32">
+          <div className="flex flex-col mb-32">
             {creators.map((creator, index) => (
-              <FadeIn key={creator.id} className="w-full">
+              <div key={creator.id} className={index < 3 ? "mb-32" : `grid transition-all duration-1000 ease-in-out ${showAll ? 'grid-rows-[1fr] opacity-100 mb-32' : 'grid-rows-[0fr] opacity-0 mb-0'}`}>
+                <div className="overflow-hidden">
+              <FadeIn className="w-full">
                 <div 
                   className={`flex flex-col ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'} items-center gap-12 md:gap-24`}
                 >
@@ -168,43 +223,20 @@ export default function CreatorsPage() {
                     </a>
                   ) : (
                     <div className="relative w-72 md:w-80 aspect-[9/16] bg-black rounded-[3rem] shadow-xl overflow-hidden border-4 border-white transform transition-transform duration-500 hover:scale-105 hover:rotate-2">
-                        {creator.videoUrl ? (
-                            <a href={creator.videoUrl} target="_blank" rel="noopener noreferrer" className="block w-full h-full relative group">
-                                {creator.thumbnail ? (
-                                    <Image src={creator.thumbnail} alt={`${creator.name} thumbnail`} fill className="object-cover" />
-                                ) : (
-                                    <div className={`absolute inset-0 ${creator.videoColor || 'bg-gray-800'} opacity-80`}></div>
-                                )}
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center transition-transform group-hover:scale-110">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8 text-white ml-1">
-                                            <path fillRule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clipRule="evenodd" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <div className="absolute bottom-6 left-6 right-6">
-                                    <p className="text-white text-sm font-medium opacity-90">Watch Review</p>
-                                </div>
-                            </a>
-                        ) : (
-                            <div className="w-full h-full relative">
-                                {creator.thumbnail ? (
-                                    <Image src={creator.thumbnail} alt={`${creator.name} thumbnail`} fill className="object-cover" />
-                                ) : (
-                                    <div className={`absolute inset-0 ${creator.videoColor || 'bg-gray-800'} opacity-80`}></div>
-                                )}
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8 text-white ml-1">
-                                            <path fillRule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clipRule="evenodd" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <div className="absolute bottom-6 left-6 right-6">
-                                    <p className="text-white text-sm font-medium opacity-90">Watch Review</p>
+                        <a href={creator.videoUrl} target="_blank" rel="noopener noreferrer" className="block w-full h-full relative group">
+                            {creator.thumbnail ? (
+                                <Image src={creator.thumbnail} alt={`${creator.name} thumbnail`} fill className="object-cover" />
+                            ) : (
+                                <div className={`absolute inset-0 ${creator.videoColor || 'bg-gray-800'} opacity-80`}></div>
+                            )}
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center transition-transform group-hover:scale-110">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8 text-white ml-1">
+                                        <path fillRule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clipRule="evenodd" />
+                                    </svg>
                                 </div>
                             </div>
-                        )}
+                        </a>
                     </div>
                   )}
                 </div>
@@ -236,10 +268,114 @@ export default function CreatorsPage() {
                 </div>
               </div>
               </FadeIn>
+              </div>
+              </div>
             ))}
+            {!showAll && creators.length > 3 && (
+              <FadeIn>
+                <div className="flex justify-center pt-8">
+                  <button 
+                    onClick={() => setShowAll(true)}
+                    className="bg-black text-white text-lg font-bold py-4 px-12 rounded-full hover:bg-[#a6dff6] hover:text-black transition-all duration-300 shadow-xl hover:scale-105 active:scale-95"
+                  >
+                    See More Creators
+                  </button>
+                </div>
+              </FadeIn>
+            )}
+            {showAll && creators.length > 3 && (
+              <FadeIn>
+                <div className="flex justify-center pt-8">
+                  <button 
+                    onClick={() => setShowAll(false)}
+                    className="bg-black text-white text-lg font-bold py-4 px-12 rounded-full hover:bg-[#a6dff6] hover:text-black transition-all duration-300 shadow-xl hover:scale-105 active:scale-95"
+                  >
+                    Show Less
+                  </button>
+                </div>
+              </FadeIn>
+            )}
           </div>
+
+           {/* Iconix Section */}
+          <FadeIn className="pt-16 border-t-2 border-dashed border-gray-200">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-6xl font-black text-black tracking-tight mb-4">
+                <span className="text-pink-400">ICONIX.PH</span>
+              </h2>
+              <div className="w-20 h-1.5 bg-black mx-auto rounded-full mb-6"></div>
+              <p className="text-lg text-gray-600 font-medium max-w-2xl mx-auto">
+                A powerhouse trio of artists, each with their own unique and delicious take on Crumella cookies.
+              </p>
+            </div>
+          </FadeIn>
+
+          <FadeIn className="w-full">
+            <style>{`
+              .swiper-button-next, .swiper-button-prev { 
+                color: black !important; 
+                display: none !important;
+              }
+              @media (min-width: 768px) {
+                .swiper-button-next, .swiper-button-prev { display: flex !important; }
+              }
+              .swiper-pagination-bullet-active { background: black !important; }
+              .swiper-pagination { bottom: -5px !important; }
+            `}</style>
+            <Swiper
+              modules={[Pagination, Navigation, Autoplay]}
+              spaceBetween={32}
+              slidesPerView={1}
+              navigation
+              pagination={{ clickable: true }}
+              autoplay={{ delay: 6000, disableOnInteraction: false }}
+              loop={true}
+              breakpoints={{
+                640: { slidesPerView: 2 },
+                1024: { slidesPerView: 3 },
+              }}
+              className="w-full pb-32 md:pb-16"
+            >
+              {iconixCreators.map((creator) => (
+                <SwiperSlide key={creator.id} className="h-auto">
+                  <div className="flex flex-col gap-4 group h-full justify-start w-72 md:w-80 mx-auto">
+                    {/* Video Visual - Card Style */}
+                    <div className="relative w-full aspect-[9/16] bg-black rounded-[2rem] shadow-lg overflow-hidden border-2 border-white transform transition-transform duration-500 group-hover:scale-[1.02] group-hover:-rotate-1">
+                      <a href={creator.videoUrl} target="_blank" rel="noopener noreferrer" className="block w-full h-full relative">
+                        <Image src={creator.thumbnail} alt={`${creator.name} thumbnail`} fill className="object-cover" />
+                        
+                        {/* Overlay Icon */}
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center transition-transform group-hover:scale-110">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7 text-white ml-1">
+                              <path fillRule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        </div>
+                      </a>
+                    </div>
+                    
+                    {/* Content */}
+                    <div className="px-2">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="relative w-10 h-10 rounded-full overflow-hidden border border-[#a6dff6] flex-shrink-0">
+                          <Image src={creator.image} alt={creator.name} fill className="object-cover" />
+                        </div>
+                        <div>
+                          <h3 className="text-md font-bold text-black leading-tight">{creator.name}</h3>
+                          <p className="text-[#a6dff6] font-bold text-xs">{creator.handle}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </SwiperSlide>
+              ))}
+            </Swiper>
+          </FadeIn>
         </div>
       </section>
+
+   
 
       {/* Footer */}
       <Footer />

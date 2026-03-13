@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,6 +14,10 @@ export default function PaymentPage() {
   const [voucherCode, setVoucherCode] = useState("");
   const [discount, setDiscount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [rewardsId, setRewardsId] = useState("");
+  const [isRewardsIdValid, setIsRewardsIdValid] = useState<boolean | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationMessage, setValidationMessage] = useState("");
   const router = useRouter();
 
   useEffect(() => {
@@ -26,6 +30,91 @@ export default function PaymentPage() {
       router.push("/order");
     }
   }, [router]);
+
+  // Auto-fill Rewards ID if a redemption is pending so the user earns points on the paid portion
+  useEffect(() => {
+    const autoFillRewards = async () => {
+      const pendingRedemptionRaw = localStorage.getItem("pending_redemption");
+      if (pendingRedemptionRaw) {
+        try {
+          const parsed = JSON.parse(pendingRedemptionRaw);
+          // Handle both array (legacy) and object formats
+          const redemption = Array.isArray(parsed) ? parsed[0] : parsed;
+          
+          if (redemption?.unique_id) {
+            setRewardsId(redemption.unique_id);
+            setIsValidating(true);
+            
+            const { data } = await supabase
+              .from('loyalty_cards')
+              .select('is_activated, first_name')
+              .eq('unique_id', redemption.unique_id)
+              .single();
+
+            if (data && data.is_activated) {
+              setIsRewardsIdValid(true);
+              setValidationMessage(`Card linked: ${data.first_name}`);
+            }
+            setIsValidating(false);
+          }
+        } catch (e) {
+          console.error("Error auto-filling rewards ID:", e);
+        }
+      }
+    };
+    
+    autoFillRewards();
+  }, []);
+
+  // Recalculate total on the client-side to ensure data integrity,
+  // avoiding issues like NaN from corrupted localStorage data.
+  const calculatedTotal = useMemo(() => {
+    if (!order || !Array.isArray(order.items)) {
+      return 0;
+    }
+    return order.items.reduce((acc: number, item: any) => {
+      // Safely access price and quantity, providing defaults if they are not numbers.
+      const price = typeof item.price === 'number' ? item.price : 0;
+      const quantity = typeof item.quantity === 'number' ? item.quantity : 1;
+      return acc + price * quantity;
+    }, 0);
+  }, [order]);
+
+  const handleValidateRewardsId = async () => {
+    if (!rewardsId) {
+      setValidationMessage("Please enter a Unique ID.");
+      setIsRewardsIdValid(false);
+      return;
+    }
+
+    setIsValidating(true);
+    setValidationMessage("");
+    setIsRewardsIdValid(null);
+
+    try {
+      const { data, error } = await supabase
+        .from('loyalty_cards')
+        .select('is_activated, first_name')
+        .eq('unique_id', rewardsId)
+        .single();
+
+      if (error || !data) {
+        setValidationMessage("Invalid Unique ID. Please check and try again.");
+        setIsRewardsIdValid(false);
+      } else if (!data.is_activated) {
+        setValidationMessage("This card is not activated yet. Please activate it on the Rewards page.");
+        setIsRewardsIdValid(false);
+      } else {
+        setValidationMessage(`Card validated for ${data.first_name}! Points will be added on confirmation.`);
+        setIsRewardsIdValid(true);
+      }
+    } catch (err) {
+      setValidationMessage("An error occurred during validation. Please try again.");
+      setIsRewardsIdValid(false);
+    } finally {
+      setIsValidating(false);
+    }
+  };
 
   const handleConfirmPayment = async () => {
     if ((paymentMethod === 'gcash' || paymentMethod === 'bank') && !proofFile) {
@@ -52,9 +141,10 @@ export default function PaymentPage() {
         }
 
         // 2. Prepare Order Data
-        const finalTotal = order.total - discount;
+        const finalTotal = calculatedTotal - discount;
         const orderData = {
             ...order,
+            total: calculatedTotal, // Overwrite the old total with the accurate one
             paymentMethod,
             proofUrl,
             voucherCode: discount > 0 ? voucherCode : null,
@@ -95,9 +185,63 @@ export default function PaymentPage() {
           }
         }
 
-        // 4. Cleanup & Redirect
+        // 5a. Deduct points for redeemed item (if any)
+        const pendingRedemptionRaw = localStorage.getItem('pending_redemption');
+        if (pendingRedemptionRaw) {
+          // Handle both array (new) and object (legacy) formats
+          const parsed = JSON.parse(pendingRedemptionRaw);
+          const pendingRedemptions = Array.isArray(parsed) ? parsed : [parsed];
+
+          for (const pendingRedemption of pendingRedemptions) {
+            if (pendingRedemption.unique_id && pendingRedemption.points_cost > 0) {
+            try {
+              const { error: deductError } = await supabase.rpc('deduct_points', {
+                card_id: pendingRedemption.unique_id,
+                points_to_deduct: Number(pendingRedemption.points_cost)
+              });
+
+              if (deductError) {
+                // Log error for manual correction, but don't block the user.
+                // The order is already placed.
+                console.error('CRITICAL: Failed to deduct points for redemption:', deductError.message || deductError);
+              }
+            } catch (redemptionError) {
+              console.error('CRITICAL: An unexpected error occurred during point deduction:', redemptionError);
+            }
+          }
+          }
+        }
+
+        // 5. Add points to loyalty card (if provided)
+        let pointsToAdd = 0;
+        if (rewardsId && isRewardsIdValid) {
+          try {
+            pointsToAdd = Math.floor(finalTotal / 20);
+            if (pointsToAdd > 0) {
+              const { error: rewardsError } = await supabase.rpc('add_points', {
+                points_to_add: pointsToAdd,
+                card_id: rewardsId
+              });
+
+              if (rewardsError) {
+                // Log error but don't block the user flow
+                console.error('Failed to add points to rewards card:', rewardsError);
+              }
+            }
+          } catch (rewardsError) {
+            // Log error but don't block the user flow
+            console.error('An unexpected error occurred while adding points:', rewardsError);
+          }
+        }
+
+        // 6. Cleanup & Redirect
         localStorage.removeItem("latestOrder");
-        router.push(`/success?trackingNumber=${order.tracking_number}`);
+        localStorage.removeItem("pending_redemption"); // Clean up redemption data
+        let redirectUrl = `/success?trackingNumber=${order.tracking_number}`;
+        if (pointsToAdd > 0) {
+          redirectUrl += `&pointsEarned=${pointsToAdd}`;
+        }
+        router.push(redirectUrl);
 
     } catch (error) {
         console.error("Error saving order:", error);
@@ -130,8 +274,8 @@ export default function PaymentPage() {
           <div className="text-center mb-8 md:mb-10">
             <p className="text-gray-500 font-medium uppercase tracking-wider text-xs md:text-sm mb-2">Total Amount Due</p>
             <h2 className="text-4xl md:text-5xl font-black text-black">
-                ₱{(order.total - discount).toFixed(2)}
-                {discount > 0 && <span className="text-lg text-gray-400 line-through ml-3">₱{order.total.toFixed(2)}</span>}
+                ₱{(calculatedTotal - discount).toFixed(2)}
+                {discount > 0 && <span className="text-lg text-gray-400 line-through ml-3">₱{calculatedTotal.toFixed(2)}</span>}
             </h2>
           </div>
 
@@ -139,12 +283,41 @@ export default function PaymentPage() {
           <div className="mb-8 md:mb-10 bg-gray-50 p-4 md:p-6 rounded-2xl border border-gray-100">
             <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Have a Voucher?</label>
             <VoucherInput 
-              cartTotal={order.total} 
+              cartTotal={calculatedTotal} 
               onApply={(amount, code) => {
                 setDiscount(amount);
                 setVoucherCode(code);
               }} 
             />
+          </div>
+
+          {/* Rewards Section */}
+          <div className="mb-8 md:mb-10 bg-gray-50 p-4 md:p-6 rounded-2xl border border-gray-100">
+            <label htmlFor="rewards-id" className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Have a Crumella Rewards Card?</label>
+            <p className="text-sm text-gray-500 mb-3">Enter your Unique ID to earn points from this purchase.</p>
+            <div className="flex items-start gap-2">
+              <input
+                id="rewards-id"
+                type="text"
+                value={rewardsId}
+                onChange={(e) => {
+                  setRewardsId(e.target.value);
+                  setIsRewardsIdValid(null);
+                  setValidationMessage("");
+                }}
+                className="w-full px-5 py-3 rounded-xl bg-white border-2 border-gray-200 focus:border-black focus:bg-white outline-none transition-all font-bold text-black placeholder-gray-300 disabled:bg-gray-100"
+                placeholder="Enter your Unique ID"
+                disabled={isRewardsIdValid === true}
+              />
+              <button
+                onClick={handleValidateRewardsId}
+                disabled={isValidating || !rewardsId || isRewardsIdValid === true}
+                className="px-6 py-3 rounded-xl bg-black text-white font-bold hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              >
+                {isValidating ? "..." : "Validate"}
+              </button>
+            </div>
+            {validationMessage && <p className={`text-sm mt-2 font-medium ${isRewardsIdValid === false ? 'text-red-600' : 'text-green-600'}`}>{validationMessage}</p>}
           </div>
 
           <div className="space-y-6">
@@ -255,31 +428,54 @@ export default function PaymentPage() {
             <div className="pt-8 border-t border-gray-100 mt-8">
                 <h4 className="font-bold text-black mb-4">Order Summary</h4>
                 <div className="space-y-2 mb-6">
-                    {order.items.map((item: any, idx: number) => (
-                        <div key={idx} className="flex justify-between text-sm">
-                            <span className="text-gray-600">{item.quantity}x {item.name}</span>
-                        </div>
-                    ))}
+                    {order.items.map((item: any, idx: number) => {
+                        const isRedeemed = item.price === 0 || item.isRedeemed;
+                        return (
+                            <div key={idx} className="flex justify-between items-center text-sm">
+                                <div>
+                                    <span className="text-gray-600">
+                                        {typeof item.quantity === 'number' ? item.quantity : 1}x {typeof item.name === 'string' ? item.name : 'Item'}
+                                    </span>
+                                    {isRedeemed && (
+                                        <span className="ml-2 text-xs font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-green-100 text-green-700">
+                                            Redeemed
+                                        </span>
+                                    )}
+                                </div>
+                                <span className="font-medium text-gray-800">
+                                    {isRedeemed ? 'FREE' : `₱${(item.price * item.quantity).toFixed(2)}`}
+                                </span>
+                            </div>
+                        );
+                    })}
                 </div>
                 
                 <div className="bg-gray-50 p-6 rounded-xl space-y-2 text-sm">
                     <div className="flex justify-between">
                         <span className="text-gray-500">Customer</span>
-                        <span className="font-medium text-black">{order.customer.name}</span>
+                        <span className="font-medium text-black">
+                            {typeof order.customer.name === 'string' ? order.customer.name : '[Invalid Name]'}
+                        </span>
                     </div>
                     <div className="flex justify-between">
                         <span className="text-gray-500">Type</span>
-                        <span className="font-medium text-black capitalize">{order.customer.orderType}</span>
+                        <span className="font-medium text-black capitalize">
+                            {typeof order.customer.orderType === 'string' ? order.customer.orderType : 'Order'}
+                        </span>
                     </div>
                     {order.customer.orderType === 'delivery' ? (
                         <div className="flex justify-between">
                             <span className="text-gray-500">Address</span>
-                            <span className="font-medium text-black text-right max-w-[200px] truncate">{order.customer.address}</span>
+                            <span className="font-medium text-black text-right max-w-[200px] truncate">
+                                {typeof order.customer.address === 'string' ? order.customer.address : '[Invalid Address]'}
+                            </span>
                         </div>
                     ) : (
                         <div className="flex justify-between">
                             <span className="text-gray-500">Pickup At</span>
-                            <span className="font-medium text-black text-right">{order.customer.pickupLocation}</span>
+                            <span className="font-medium text-black text-right">
+                                {typeof order.customer.pickupLocation === 'string' ? order.customer.pickupLocation : '[Invalid Location]'}
+                            </span>
                         </div>
                     )}
                 </div>

@@ -7,6 +7,7 @@ function SuccessContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
   const trackingNumber = searchParams.get('trackingNumber');
+  const pointsEarned = searchParams.get("pointsEarned");
   const displayId = trackingNumber || orderId;
   const [copied, setCopied] = useState(false);
 
@@ -43,6 +44,14 @@ function SuccessContent() {
         <p className="text-gray-500 mb-8 text-lg font-medium leading-relaxed">
           Your Crumella order is confirmed. 
         </p>
+
+        {pointsEarned && Number(pointsEarned) > 0 && (
+          <div className="bg-blue-50 border-2 border-blue-100 p-4 rounded-2xl mb-8 animate-in fade-in zoom-in-95 duration-300">
+            <p className="text-sm font-bold text-blue-900">You've earned</p>
+            <p className="text-4xl font-black text-blue-500 my-1">{pointsEarned} points!</p>
+            <p className="text-xs text-blue-800/70 font-medium">They have been added to your Crumella Rewards card.</p>
+          </div>
+        )}
 
         <div className="bg-blue-50 p-4 rounded-xl mb-8 flex items-center justify-between border border-blue-100">
           <div className="text-left">

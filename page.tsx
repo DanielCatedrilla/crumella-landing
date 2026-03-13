@@ -1,8 +1,13 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
-export default function SuccessPage() {
+function SuccessContent() {
+  const searchParams = useSearchParams();
+  const trackingNumber = searchParams.get("trackingNumber");
+  const pointsEarned = searchParams.get("pointsEarned");
+
   useEffect(() => {
     // Clear saved cart and checkout details on success
     localStorage.removeItem("chewy_cart_items");
@@ -25,14 +30,37 @@ export default function SuccessPage() {
         <h1 className="text-3xl md:text-4xl font-black text-black mb-4">
           Order Confirmed!
         </h1>
-        <p className="text-gray-500 font-medium mb-8">
-          Thank you for your purchase. We have received your order and will process it shortly.
+        <p className="text-gray-500 font-medium mb-6">
+          Thank you for your purchase. We've sent a confirmation to your email and will process your order shortly.
         </p>
+
+        {trackingNumber && (
+          <div className="bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 mb-8">
+            <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Tracking Number</p>
+            <p className="text-lg font-mono font-bold text-black tracking-widest">{trackingNumber}</p>
+          </div>
+        )}
+
+        {pointsEarned && Number(pointsEarned) > 0 && (
+          <div className="bg-blue-50 border-2 border-blue-100 p-4 rounded-2xl mb-8 animate-in fade-in zoom-in-95 duration-300">
+            <p className="text-sm font-bold text-blue-900">You've earned</p>
+            <p className="text-4xl font-black text-[#a6dff6] my-1">{pointsEarned} points!</p>
+            <p className="text-xs text-blue-800/70 font-medium">They have been added to your Crumella Rewards card.</p>
+          </div>
+        )}
 
         <Link href="/" className="block w-full bg-black text-white font-bold py-4 rounded-full hover:bg-[#a7dff4] hover:text-black hover:scale-[1.02] active:scale-95 transition-all duration-300 shadow-lg">
           Back to Home
         </Link>
       </div>
     </main>
+  );
+}
+
+export default function SuccessPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SuccessContent />
+    </Suspense>
   );
 }

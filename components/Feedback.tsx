@@ -13,13 +13,13 @@ const FEEDBACKS = [
     id: 2,
     name: "Nathan Licera",
     comment: "dabestttt. my go-to when craving something sweet. u guys should try (esp the red velvet flavor. saurr sarap)",
-    src: "/FB/Nathan.jpg", // Add your photo path here
+    src: "/FB/Nathan(1).jpg", // Add your photo path here
   },
   {
     id: 3,
     name: "Chrishelle Gicos Valenzuela",
     comment: "Highly recommended, namit2! My go-to cookies😍😋",
-    src: "/FB/Chrishelle.jpg", // Add your photo path here
+    src: "/FB/Chrishelle(1).jpg", // Add your photo path here
   },
   {
     id: 4,
@@ -37,7 +37,25 @@ const FEEDBACKS = [
     id: 6,
     name: "Chloee Faith Lagunday",
     comment: "highly recommended, quality cookies and very namit!!!",
-    src: "/FB/Chloe.jpg", // Add your photo path here
+    src: "/FB/Chloe(1).jpg", // Add your photo path here
+  },
+   {
+    id: 7,
+    name: "Bernardo Lagunday",
+    comment: "Highly recommended gid!!😁",
+    src: "/FB/Bernardo.jpg", // Add your photo path here
+  },
+  {
+    id: 8,
+    name: "Annaisha Yumi",
+    comment: "the best cookie I've ever tried!",
+    src: "/FB/Annaisha.jpg", // Add your photo path here
+  },
+  {
+    id: 9,
+    name: "Bobby Balicbalic Jr.",
+    comment: "Soafer namit sha!!! ma order ko liwat",
+    src: "/FB/Bobby.jpg", // Add your photo path here
   },
 ];
 

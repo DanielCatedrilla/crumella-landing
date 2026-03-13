@@ -1,10 +1,34 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const pathname = usePathname();
+  const isHomepage = pathname === '/';
+
+  useEffect(() => {
+    if (isHomepage) {
+      const handleScroll = () => {
+        // Set isScrolled to true if user has scrolled more than 10px, false otherwise
+        setIsScrolled(window.scrollY > 10);
+      };
+
+      // Add event listener for scroll
+      window.addEventListener('scroll', handleScroll);
+      // Run on mount to check initial position
+      handleScroll();
+
+      // Clean up event listener on component unmount
+      return () => window.removeEventListener('scroll', handleScroll);
+    } else {
+      // On any other page, the navbar should always have a background
+      setIsScrolled(true);
+    }
+  }, [isHomepage]);
 
   const handleNavAway = () => {
     // Fire a custom event that the order page can listen to, to clear persisted state.
@@ -22,19 +46,19 @@ export default function Navbar() {
         aria-hidden="true"
       />
 
-      <div className="bg-[#a6dff6] shadow-lg relative z-10">
+      <div className={`relative z-10 transition-all duration-300 ${isScrolled || isOpen ? 'bg-[#a6dff6] shadow-lg' : 'bg-transparent'}`}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between relative">
         
         {/* Hamburger Menu Button (Left) */}
         <button 
           onClick={() => setIsOpen(!isOpen)}
-          className="z-50 p-2 -ml-2 text-black hover:bg-white/20 rounded-lg transition-colors focus:outline-none"
+          className={`z-50 p-2 -ml-2 rounded-lg transition-colors focus:outline-none ${isScrolled || isOpen ? 'text-black hover:bg-white/20' : 'text-white hover:bg-black/20'}`}
           aria-label="Toggle Menu"
         >
           <div className="w-6 h-5 flex flex-col justify-between relative">
-            <span className={`w-full h-0.5 bg-black rounded-full transition-all duration-300 ease-in-out ${isOpen ? 'rotate-45 translate-y-2.5' : ''}`} />
-            <span className={`w-full h-0.5 bg-black rounded-full transition-all duration-300 ease-in-out ${isOpen ? 'opacity-0' : ''}`} />
-            <span className={`w-full h-0.5 bg-black rounded-full transition-all duration-300 ease-in-out ${isOpen ? '-rotate-45 -translate-y-2' : ''}`} />
+            <span className={`w-full h-0.5 rounded-full transition-all duration-300 ease-in-out ${isScrolled || isOpen ? 'bg-black' : 'bg-white [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.4))]'} ${isOpen ? 'rotate-45 translate-y-2.5' : ''}`} />
+            <span className={`w-full h-0.5 rounded-full transition-all duration-300 ease-in-out ${isScrolled || isOpen ? 'bg-black' : 'bg-white [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.4))]'} ${isOpen ? 'opacity-0' : ''}`} />
+            <span className={`w-full h-0.5 rounded-full transition-all duration-300 ease-in-out ${isScrolled || isOpen ? 'bg-black' : 'bg-white [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.4))]'} ${isOpen ? '-rotate-45 -translate-y-2' : ''}`} />
           </div>
         </button>
 
@@ -53,7 +77,11 @@ export default function Navbar() {
         </div>
 
         {/* Order Button (Right) */}
-        <Link href="/order" className="hidden md:block bg-black text-white px-5 py-2 md:px-8 md:py-3 rounded-full font-bold text-sm md:text-lg shadow-md hover:bg-gray-900 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer z-50">
+        <Link 
+          href="/order" 
+          className={`hidden md:block px-5 py-2 md:px-8 md:py-3 rounded-full font-bold text-sm md:text-lg shadow-md hover:scale-105 transition-all duration-300 cursor-pointer z-50 ${
+            isScrolled || isOpen ? 'bg-black text-white hover:bg-gray-900 hover:shadow-xl' : 'bg-white/10 text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.5)] border-2 border-white backdrop-blur-sm hover:bg-white hover:text-black'
+          }`}>
           Order Now
         </Link>
 
@@ -63,22 +91,25 @@ export default function Navbar() {
       {/* Collapsible Menu Overlay */}
       <div className={`absolute top-full left-0 w-full bg-[#a6dff6] shadow-xl border-t border-white/20 overflow-hidden transition-all duration-500 ease-in-out ${isOpen ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'}`}>
         <div className="flex flex-col items-center gap-6 py-8 pb-10">
-          <Link href="/" onClick={handleNavAway} className="text-xl font-black uppercase tracking-widest hover:text-white transition-colors">
+          <Link href="/" onClick={handleNavAway} className="text-xl font-black uppercase tracking-widest text-black hover:text-white transition-colors duration-300 ease-in-out">
             Home
           </Link>
-          <Link href="/#menu" onClick={() => setIsOpen(false)} className="text-xl font-black uppercase tracking-widest hover:text-white transition-colors">
+          <Link href="/#menu" onClick={() => setIsOpen(false)} className="text-xl font-black uppercase tracking-widest text-black hover:text-white transition-colors duration-300 ease-in-out">
             Menu
           </Link>
-          <Link href="/creators" onClick={handleNavAway} className="text-xl font-black uppercase tracking-widest hover:text-white transition-colors">
+          <Link href="/points" onClick={handleNavAway} className="text-xl font-black uppercase tracking-widest text-black hover:text-white transition-colors duration-300 ease-in-out">
+            Rewards
+          </Link>
+          <Link href="/creators" onClick={handleNavAway} className="text-xl font-black uppercase tracking-widest text-black hover:text-white transition-colors duration-300 ease-in-out">
             Creators
           </Link>
-          <Link href="/track-order" onClick={handleNavAway} className="text-xl font-black uppercase tracking-widest hover:text-white transition-colors">
+          <Link href="/track-order" onClick={handleNavAway} className="text-xl font-black uppercase tracking-widest text-black hover:text-white transition-colors duration-300 ease-in-out">
             Track Order
           </Link>
-          <Link href="/feedback" onClick={handleNavAway} className="text-xl font-black uppercase tracking-widest hover:text-white transition-colors">
+          <Link href="/feedback" onClick={handleNavAway} className="text-xl font-black uppercase tracking-widest text-black hover:text-white transition-colors duration-300 ease-in-out">
             Feedback
           </Link>
-          <Link href="/contact" onClick={handleNavAway} className="text-xl font-black uppercase tracking-widest hover:text-white transition-colors">
+          <Link href="/contact" onClick={handleNavAway} className="text-xl font-black uppercase tracking-widest text-black hover:text-white transition-colors duration-300 ease-in-out">
             Contact
           </Link>
         </div>

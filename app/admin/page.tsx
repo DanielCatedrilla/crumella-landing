@@ -14,6 +14,7 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'orders' | 'vouchers' | 'statistics' | 'feedbacks'>('orders');
   const [password, setPassword] = useState("");
   const [orderFilter, setOrderFilter] = useState('All');
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const storedAuth = localStorage.getItem("adminAuthenticated");
@@ -126,7 +127,23 @@ export default function AdminPage() {
     return { monthly, bestSeller, totalBoxes, cookieRatings };
   }, [orders, feedbacks]);
 
-  const filteredOrders = orders.filter(order => orderFilter === 'All' || order.status === orderFilter);
+  const filteredOrders = orders.filter(order => {
+    const statusMatch = orderFilter === 'All' || order.status === orderFilter;
+    if (!statusMatch) {
+      return false;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) {
+      return true;
+    }
+
+    return (
+      (order.customer?.name || '').toLowerCase().includes(query) ||
+      (order.tracking_number || '').toLowerCase().includes(query) ||
+      (order.customer?.phone || '').toLowerCase().includes(query)
+    );
+  });
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -436,8 +453,8 @@ export default function AdminPage() {
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-900">Loading orders...</div>;
 
   return (
-    <main className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
+    <main className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8 font-sans">
+      <div>
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6 md:mb-8">
           <h1 className="text-2xl md:text-3xl font-black text-black">Admin Dashboard</h1>
           <div className="flex items-center gap-4 self-start md:self-auto">
@@ -451,28 +468,28 @@ export default function AdminPage() {
           </div>
         </div>
 
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0">
+        <div className="flex gap-2 mb-8 p-1 bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/80 shadow-sm self-start">
           <button 
             onClick={() => setActiveTab('orders')}
-            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors whitespace-nowrap ${activeTab === 'orders' ? 'bg-black text-white' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
+            className={`px-5 py-2.5 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'orders' ? 'bg-white text-black shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-black'}`}
           >
             Orders
           </button>
           <button 
             onClick={() => setActiveTab('vouchers')}
-            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors whitespace-nowrap ${activeTab === 'vouchers' ? 'bg-black text-white' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
+            className={`px-5 py-2.5 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'vouchers' ? 'bg-white text-black shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-black'}`}
           >
             Vouchers
           </button>
           <button 
             onClick={() => setActiveTab('statistics')}
-            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors whitespace-nowrap ${activeTab === 'statistics' ? 'bg-black text-white' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
+            className={`px-5 py-2.5 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'statistics' ? 'bg-white text-black shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-black'}`}
           >
             Statistics
           </button>
           <button 
             onClick={() => setActiveTab('feedbacks')}
-            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors whitespace-nowrap ${activeTab === 'feedbacks' ? 'bg-black text-white' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
+            className={`px-5 py-2.5 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'feedbacks' ? 'bg-white text-black shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-black'}`}
           >
             Feedbacks
           </button>
@@ -480,7 +497,7 @@ export default function AdminPage() {
 
         {activeTab === 'orders' ? (
           <>
-            <div className="flex gap-2 mb-4 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0">
+            <div className="flex gap-2 mb-6 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0">
               {['All', 'New', 'Pending', 'Processing', 'Releasing', 'Completed', 'Cancelled'].map((status) => (
                 <button 
                   key={status}
@@ -489,7 +506,7 @@ export default function AdminPage() {
                     orderFilter === status 
                     ? 'bg-black text-white border-black' 
                     : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                  }`}
+                  } shadow-sm`}
                 >
                   {status}
                   <span className={`ml-2 px-1.5 py-0.5 rounded-full text-[10px] ${
@@ -501,38 +518,53 @@ export default function AdminPage() {
               ))}
             </div>
 
-            <div className="hidden md:block bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-200">
+            <div className="mb-6">
+              <div className="relative md:max-w-sm">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                </div>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="block w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl leading-5 bg-white text-black placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:border-black sm:text-sm transition"
+                  placeholder="Search by name, tracking no, or phone..."
+                />
+              </div>
+            </div>
+
+            <div className="hidden md:block bg-white rounded-3xl shadow-sm overflow-hidden border border-gray-200">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-gray-100 border-b border-gray-200">
+              <thead className="bg-white">
                 <tr>
-                  <th className="p-4 font-bold text-gray-700">ID</th>
-                  <th className="p-4 font-bold text-gray-700">Tracking No.</th>
-                  <th className="p-4 font-bold text-gray-700">Date</th>
-                  <th className="p-4 font-bold text-gray-700">Customer</th>
-                  <th className="p-4 font-bold text-gray-700">Logistics</th>
-                  <th className="p-4 font-bold text-gray-700">Items</th>
-                  <th className="p-4 font-bold text-gray-700">Payment</th>
-                  <th className="p-4 font-bold text-gray-700">Del. Fee</th>
-                  <th className="p-4 font-bold text-gray-700">Total</th>
-                  <th className="p-4 font-bold text-gray-700">Proof</th>
-                  <th className="p-4 font-bold text-gray-700">Status</th>
-                  <th className="p-4 font-bold text-gray-700">Action</th>
+                  <th className="p-5 font-semibold text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100">ID</th>
+                  <th className="p-5 font-semibold text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100">Tracking No.</th>
+                  <th className="p-5 font-semibold text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100">Date</th>
+                  <th className="p-5 font-semibold text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100">Customer</th>
+                  <th className="p-5 font-semibold text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100">Logistics</th>
+                  <th className="p-5 font-semibold text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100">Items</th>
+                  <th className="p-5 font-semibold text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100">Payment</th>
+                  <th className="p-5 font-semibold text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100">Del. Fee</th>
+                  <th className="p-5 font-semibold text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100">Total</th>
+                  <th className="p-5 font-semibold text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100">Proof</th>
+                  <th className="p-5 font-semibold text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100">Status</th>
+                  <th className="p-5 font-semibold text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody>
                 {filteredOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="p-4 font-bold text-gray-500">{order.id}</td>
-                    <td className="p-4 font-bold text-gray-900 font-mono">{order.tracking_number || '-'}</td>
-                    <td className="p-4 text-gray-700 whitespace-nowrap">
+                  <tr key={order.id} className="hover:bg-slate-50/50 transition-colors border-b border-gray-100 last:border-b-0">
+                    <td className="p-5 font-bold text-gray-500">{order.id}</td>
+                    <td className="p-5 font-bold text-gray-900 font-mono">{order.tracking_number || '-'}</td>
+                    <td className="p-5 text-gray-700 whitespace-nowrap">
                       {order.status === 'New' && (
                         <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold mb-1 inline-block animate-pulse">NEW</span>
                       )}
                       <div>{new Date(order.createdAt).toLocaleDateString()}</div>
                       <div className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleTimeString()}</div>
                     </td>
-                    <td className="p-4">
+                    <td className="p-5">
                       <div className="font-bold text-black">{order.customer.name}</div>
                       <div className="text-gray-600 text-xs">{order.customer.email}</div>
                       <div className="text-gray-600 text-xs">{order.customer.phone}</div>
@@ -542,7 +574,7 @@ export default function AdminPage() {
                         {order.customer.orderType}
                       </div>
                     </td>
-                    <td className="p-4 min-w-[200px]">
+                    <td className="p-5 min-w-[200px]">
                       <div className="text-xs">
                         <div className="font-bold text-gray-900 mb-1">
                           {order.customer.orderType === 'delivery' ? '📍 Delivery Address' : '🏪 Pickup Location'}
@@ -579,19 +611,19 @@ export default function AdminPage() {
                         )}
                       </div>
                     </td>
-                    <td className="p-4 min-w-[200px]">
+                    <td className="p-5 min-w-[200px]">
                       <ul className="list-disc list-inside text-gray-700">
                         {order.items.map((item: any, idx: number) => (
                           <li key={idx}><span className="font-bold">{item.quantity}x</span> {item.name}</li>
                         ))}
                       </ul>
                       {order.customer.notes && (
-                        <div className="text-xs text-gray-700 mt-1 italic bg-yellow-50 p-1 rounded">Note: {order.customer.notes}</div>
+                        <div className="text-xs text-gray-700 mt-2 italic bg-yellow-50 p-2 rounded-lg border border-yellow-100">Note: {order.customer.notes}</div>
                       )}
                     </td>
-                    <td className="p-4 capitalize text-gray-700">
+                    <td className="p-5 capitalize text-gray-700">
                       <select 
-                        className="bg-transparent border-b border-gray-300 focus:border-black outline-none cursor-pointer py-1"
+                        className="bg-gray-50 border border-gray-200 rounded-md focus:border-black outline-none cursor-pointer py-1 px-2 text-xs"
                         value={order.paymentMethod || 'cash'}
                         onChange={(e) => updatePaymentMethod(order.id, e.target.value)}
                       >
@@ -600,14 +632,14 @@ export default function AdminPage() {
                         <option value="bank">Bank Transfer</option>
                       </select>
                     </td>
-                    <td className="p-4 text-gray-700 whitespace-nowrap">
+                    <td className="p-5 text-gray-700 whitespace-nowrap">
                       {order.customer.orderType === 'delivery' ? (
                         <span className="font-medium">₱{getDeliveryFee(order.customer).toFixed(2)}</span>
                       ) : (
                         <span className="text-gray-400">-</span>
                       )}
                     </td>
-                    <td className="p-4 font-bold text-black whitespace-nowrap">
+                    <td className="p-5 font-bold text-black whitespace-nowrap">
                       <div className="flex items-center gap-1 relative group">
                         {order.customer.isManualDiscount && order.customer.originalTotal && (
                           <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 shadow-lg">
@@ -643,16 +675,16 @@ export default function AdminPage() {
                         </div>
                       )}
                     </td>
-                    <td className="p-4">
+                    <td className="p-5">
                       {order.proofUrl ? (
                         <a href={order.proofUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs font-bold">
                           View Image
                         </a>
                       ) : (
-                        <span className="text-gray-400 text-xs">No Proof</span>
+                        <span className="text-gray-400 text-xs font-medium">No Proof</span>
                       )}
                     </td>
-                    <td className="p-4">
+                    <td className="p-5">
                       <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                         order.status === 'Completed' ? 'bg-green-100 text-green-700' :
                         order.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
@@ -663,7 +695,7 @@ export default function AdminPage() {
                         {order.status}
                       </span>
                     </td>
-                    <td className="p-4">
+                    <td className="p-5">
                       <div className="flex flex-col gap-2">
                       <select 
                         className={`border-2 rounded-xl px-4 py-2 text-xs font-bold outline-none cursor-pointer transition-all ${
@@ -685,13 +717,13 @@ export default function AdminPage() {
                       </select>
                       <button 
                         onClick={() => printOrder(order)}
-                        className="flex items-center justify-center gap-2 w-full bg-gray-900 text-white px-3 py-2 rounded-xl text-xs font-bold hover:bg-gray-700 transition-colors"
+                        className="flex items-center justify-center gap-2 w-full bg-slate-800 text-white px-3 py-2 rounded-xl text-xs font-bold hover:bg-slate-700 transition-colors"
                       >
                         Print Ticket
                       </button>
                       <button 
                         onClick={() => deleteOrder(order.id)}
-                        className="flex items-center justify-center gap-2 w-full bg-red-50 text-red-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors"
+                        className="flex items-center justify-center gap-2 w-full bg-red-50 text-red-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors border border-red-100"
                       >
                         Delete
                       </button>
@@ -712,7 +744,7 @@ export default function AdminPage() {
         {/* Mobile View (Cards) */}
         <div className="md:hidden space-y-4">
           {filteredOrders.map((order) => (
-            <div key={order.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-4">
+            <div key={order.id} className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-lg border border-white/50 flex flex-col gap-4">
               <div className="flex justify-between items-start">
                 <div>
                   {order.status === 'New' && (
@@ -735,7 +767,7 @@ export default function AdminPage() {
                 </span>
               </div>
 
-              <div className="bg-gray-50 p-3 rounded-xl text-sm">
+              <div className="bg-slate-100/80 p-4 rounded-2xl text-sm border border-white">
                 <div className="flex items-center gap-2 mb-2">
                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
                      order.customer.orderType === 'delivery' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-orange-100 text-orange-700 border-orange-200'
@@ -744,7 +776,7 @@ export default function AdminPage() {
                   </span>
                   <input 
                     type="date" 
-                    className="font-bold text-gray-700 text-xs bg-transparent border-b border-gray-300 focus:border-black outline-none"
+                    className="font-bold text-gray-700 text-xs bg-transparent border-b border-gray-300 focus:border-black outline-none w-32"
                     defaultValue={order.customer.date}
                     onBlur={(e) => {
                       if (e.target.value !== order.customer.date) {
@@ -796,10 +828,10 @@ export default function AdminPage() {
                 )}
               </div>
 
-              <div className="flex justify-between items-center border-t border-gray-100 pt-3">
+              <div className="flex justify-between items-center border-t border-slate-100 pt-4">
                 <div>
                    <select 
-                      className="text-xs text-gray-600 capitalize bg-transparent border-b border-gray-300 focus:border-black outline-none mb-1 cursor-pointer"
+                      className="text-xs text-gray-600 capitalize bg-slate-100/80 border border-gray-200 rounded-md focus:border-black outline-none mb-2 cursor-pointer p-1"
                       value={order.paymentMethod || 'cash'}
                       onChange={(e) => updatePaymentMethod(order.id, e.target.value)}
                    >
@@ -824,7 +856,7 @@ export default function AdminPage() {
                           const val = parseFloat(e.target.value);
                           if (!isNaN(val) && val !== order.finalTotal) updateOrderTotal(order.id, val, order.customer, order.finalTotal);
                         }}
-                        className={`w-24 bg-transparent border-b border-gray-300 focus:border-black outline-none py-1 ${order.customer.isManualDiscount ? 'text-purple-700 font-black' : ''}`}
+                        className={`w-24 bg-transparent border-b-2 border-gray-300 focus:border-black outline-none py-1 ${order.customer.isManualDiscount ? 'text-purple-700 font-black' : ''}`}
                       />
                    </div>
                    {order.customer.isManualDiscount && (
@@ -846,9 +878,9 @@ export default function AdminPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100">
                  <select 
-                    className={`w-full border-2 rounded-xl px-4 py-2 text-xs font-bold outline-none cursor-pointer transition-all ${
+                    className={`w-full border-2 rounded-xl px-4 py-3 text-xs font-bold outline-none cursor-pointer transition-all ${
                       order.status === 'Completed' ? 'bg-green-50 border-green-200 text-green-700 hover:border-green-400' :
                       order.status === 'Processing' ? 'bg-blue-50 border-blue-200 text-blue-700 hover:border-blue-400' :
                       order.status === 'Releasing' ? 'bg-orange-50 border-orange-200 text-orange-700 hover:border-orange-400' :
@@ -867,13 +899,13 @@ export default function AdminPage() {
                  </select>
                  <button 
                     onClick={() => printOrder(order)}
-                    className="w-full bg-gray-900 text-white px-3 py-2 rounded-xl text-sm font-bold"
+                    className="w-full bg-slate-800 text-white px-3 py-3 rounded-xl text-sm font-bold hover:bg-slate-700"
                  >
                     Print
                  </button>
                  <button 
                     onClick={() => deleteOrder(order.id)}
-                    className="col-span-2 w-full bg-red-50 text-red-600 px-3 py-2 rounded-xl text-sm font-bold hover:bg-red-100 transition-colors"
+                    className="col-span-2 w-full bg-red-50 text-red-600 px-3 py-3 rounded-xl text-sm font-bold hover:bg-red-100 transition-colors border border-red-100"
                  >
                     Delete Order
                  </button>
@@ -975,73 +1007,123 @@ export default function AdminPage() {
         ) : activeTab === 'statistics' ? (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Most Popular Product</h3>
+              <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
+                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">Most Popular Product</h3>
                 <div className="text-3xl font-black text-black mb-1">{stats.bestSeller?.name}</div>
                 <div className="text-sm text-gray-500">Sold {stats.bestSeller?.count} times all-time</div>
               </div>
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Total Boxes Sold</h3>
+              <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
+                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">Total Boxes Sold</h3>
                 <div className="text-3xl font-black text-black mb-1">{stats.totalBoxes}</div>
                 <div className="text-sm text-gray-500">Across all orders</div>
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-              <h3 className="text-lg font-bold text-gray-900 mb-6">Orders per Month</h3>
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
+              <div className="mb-8">
+                <h3 className="text-xl font-black text-gray-900">Orders Overview</h3>
+                <p className="text-sm text-gray-500 font-medium mt-1">Monthly order volume</p>
+              </div>
+              
               {stats.monthly.length > 0 ? (
-                <div className="flex items-end gap-4 h-64 w-full overflow-x-auto pb-2">
-                  {stats.monthly.map((m, i) => {
-                    const max = Math.max(...stats.monthly.map(item => item.count), 1);
-                    const height = (m.count / max) * 100;
-                    return (
-                      <div key={i} className="flex flex-col items-center gap-2 min-w-[60px] flex-1 group">
-                        <div className="text-xs font-bold text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity">{m.count}</div>
-                        <div 
-                          className="w-full bg-blue-500 rounded-t-lg transition-all hover:bg-blue-600 relative"
-                          style={{ height: `${height}%`, minHeight: '4px' }}
-                        ></div>
-                        <div className="text-xs text-gray-500 font-medium whitespace-nowrap">{m.label}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center text-gray-500 py-10">No data available for graph.</div>
-              )}
-            </div>
-
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-              <h3 className="text-lg font-bold text-gray-900 mb-6">Revenue per Month</h3>
-              {stats.monthly.length > 0 ? (
-                <div className="flex items-end gap-4 h-64 w-full overflow-x-auto pb-2">
-                  {stats.monthly.map((m, i) => {
-                    const max = Math.max(...stats.monthly.map(item => item.revenue), 1);
-                    const height = (m.revenue / max) * 100;
-                    return (
-                      <div key={i} className="flex flex-col items-center gap-2 min-w-[60px] flex-1 group">
-                        <div className="text-xs font-bold text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                          ₱{m.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <div className="relative h-64 w-full">
+                  {/* Grid Lines */}
+                  <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className="w-full border-t border-gray-100 h-0"></div>
+                    ))}
+                  </div>
+                  
+                  {/* Bars */}
+                  <div className="absolute inset-0 flex items-end justify-between gap-4 pt-4 px-2">
+                    {stats.monthly.map((m, i) => {
+                      const max = Math.max(...stats.monthly.map(item => item.count), 1);
+                      const height = (m.count / max) * 100;
+                      return (
+                        <div key={i} className="flex flex-col items-center justify-end h-full flex-1 group relative">
+                           {/* Tooltip */}
+                           <div className="absolute bottom-full mb-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-10 pointer-events-none">
+                              <div className="bg-gray-900 text-white text-xs font-bold py-1.5 px-3 rounded-lg shadow-xl whitespace-nowrap">
+                                {m.count} Orders
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                              </div>
+                           </div>
+                           
+                           {/* Bar */}
+                           <div 
+                             className="w-full max-w-[48px] bg-gradient-to-t from-blue-600 to-blue-400 rounded-t-xl transition-all duration-300 group-hover:to-blue-300 group-hover:scale-y-[1.05] origin-bottom shadow-lg shadow-blue-500/20"
+                             style={{ height: `${height}%`, minHeight: '8px' }}
+                           ></div>
+                           
+                           {/* Label */}
+                           <div className="mt-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">{m.label}</div>
                         </div>
-                        <div 
-                          className="w-full bg-green-500 rounded-t-lg transition-all hover:bg-green-600 relative"
-                          style={{ height: `${height}%`, minHeight: '4px' }}
-                        ></div>
-                        <div className="text-xs text-gray-500 font-medium whitespace-nowrap">{m.label}</div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               ) : (
-                <div className="text-center text-gray-500 py-10">No data available for graph.</div>
+                <div className="h-64 flex items-center justify-center text-gray-400 font-medium bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                  No data available yet
+                </div>
               )}
             </div>
 
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-              <h3 className="text-lg font-bold text-gray-900 mb-6">Cookie Ratings</h3>
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
+              <div className="mb-8">
+                <h3 className="text-xl font-black text-gray-900">Revenue Performance</h3>
+                <p className="text-sm text-gray-500 font-medium mt-1">Monthly gross revenue</p>
+              </div>
+
+              {stats.monthly.length > 0 ? (
+                <div className="relative h-64 w-full">
+                  {/* Grid Lines */}
+                  <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className="w-full border-t border-gray-100 h-0"></div>
+                    ))}
+                  </div>
+                  
+                  {/* Bars */}
+                  <div className="absolute inset-0 flex items-end justify-between gap-4 pt-4 px-2">
+                    {stats.monthly.map((m, i) => {
+                      const max = Math.max(...stats.monthly.map(item => item.revenue), 1);
+                      const height = (m.revenue / max) * 100;
+                      return (
+                        <div key={i} className="flex flex-col items-center justify-end h-full flex-1 group relative">
+                           {/* Tooltip */}
+                           <div className="absolute bottom-full mb-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-10 pointer-events-none">
+                              <div className="bg-gray-900 text-white text-xs font-bold py-1.5 px-3 rounded-lg shadow-xl whitespace-nowrap">
+                                ₱{m.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                              </div>
+                           </div>
+                           
+                           {/* Bar */}
+                           <div 
+                             className="w-full max-w-[48px] bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t-xl transition-all duration-300 group-hover:to-emerald-300 group-hover:scale-y-[1.05] origin-bottom shadow-lg shadow-emerald-500/20"
+                             style={{ height: `${height}%`, minHeight: '8px' }}
+                           ></div>
+                           
+                           {/* Label */}
+                           <div className="mt-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">{m.label}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="h-64 flex items-center justify-center text-gray-400 font-medium bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                  No data available yet
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
+              <h3 className="text-xl font-black text-gray-900 mb-6">Cookie Ratings</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {stats.cookieRatings.map((rating) => (
-                  <div key={rating.name} className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                  <div key={rating.name} className="bg-gray-50 p-5 rounded-2xl border border-gray-100">
                     <div className="flex justify-between items-start mb-2">
                       <h4 className="font-bold text-black">{rating.name}</h4>
                       <div className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-bold flex items-center gap-1">

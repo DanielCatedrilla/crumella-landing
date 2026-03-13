@@ -135,6 +135,35 @@ export const ORDER_ITEMS: MenuItem[] = [
         category: "Box of 4 - Assorted Bundles",
         price: 350.00,
     },
+    //HIDDEN FOR REDEEMABLES
+    {
+        id: 99,
+        name: "Free Exclusive Merch",
+        src: "/HS/Merch.png", // Image from points page
+        category: "Rewards", // A special category to keep it organized
+        price: 0.00, // Price is 0 as it's a reward
+    },
+    {
+        id: 100,
+        name: "Free Chocolate Chunk Cookie",
+        src: "/CS/CCH.png",
+        category: "Rewards",
+        price: 0.00,
+    },
+    {
+        id: 101,
+        name: "Free Crumella Minis",
+        src: "/HS/HS7.png",
+        category: "Rewards",
+        price: 0.0,
+    },
+     {
+        id: 102,
+        name: "Free Classic Assorted Bundle",
+        src: "/CS/CA.png",
+        category: "Rewards",
+        price: 0.0,
+    },
 ];
 
 export default function Menu(){
