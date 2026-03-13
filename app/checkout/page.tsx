@@ -13,7 +13,7 @@ const LocationPicker = dynamic(() => import('../../components/LocationPicker'), 
 const STORE_LOCATION = { lat: 10.7819, lng: 122.5438 }; // Store coordinates (GT Town Center Pavia)
 
 export default function CheckoutPage() {
-  const [cart, setCart] = useState<any>(null);
+  const [cart, setCart] = useState<{ [key: number]: number } | null>(null);
   const [redeemedItems, setRedeemedItems] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     name: "",
@@ -98,13 +98,13 @@ export default function CheckoutPage() {
 
   // Ensure cart is a valid object before calculating totals
   if (cart && typeof cart === 'object' && !Array.isArray(cart)) {
-    totalItems = Object.values(cart).reduce((a: number, b: number) => a + b, 0);
+    totalItems = Object.values(cart).reduce((a, b) => a + b, 0);
     itemsTotal = Object.entries(cart).reduce((total, [id, qty]) => {
         const item = ORDER_ITEMS.find(i => i.id === Number(id));
         const price = item?.price || 4.00;
         
         const freeQty = redeemedItems.filter(r => r.redeemed_item_id === Number(id)).length;
-        return total + (price * Math.max(0, (qty as number) - freeQty));
+        return total + (price * Math.max(0, qty - freeQty));
     }, 0);
   }
 
@@ -221,7 +221,7 @@ export default function CheckoutPage() {
         // Split items into free (redeemed) and paid
         Object.entries(cart).forEach(([idStr, qty]) => {
             const id = Number(idStr);
-            const quantity = qty as number;
+            const quantity = qty;
             const item = ORDER_ITEMS.find(i => i.id === id);
 
             // Defensive check: If an item from the cart is somehow not in the master list, skip it.
