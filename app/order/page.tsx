@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ORDER_ITEMS } from "../../components/Menu";
@@ -7,7 +7,7 @@ import { BsCart, BsArrowLeft } from "react-icons/bs";
 import { useRouter, useSearchParams } from "next/navigation";
 import CartSidePanel from "../../components/CartSidePanel";
 
-export default function OrderPage() {
+function OrderContent() {
   // State to track quantities for each cookie (by ID)
   const [cart, setCart] = useState<{ [key: number]: number }>({});
   const [isCartLoaded, setIsCartLoaded] = useState(false);
@@ -248,5 +248,13 @@ export default function OrderPage() {
     />
 
     </>
+  );
+}
+
+export default function OrderPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#fffdf7] flex items-center justify-center">Loading...</div>}>
+      <OrderContent />
+    </Suspense>
   );
 }
