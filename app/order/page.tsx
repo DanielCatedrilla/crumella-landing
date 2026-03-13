@@ -236,6 +236,24 @@ function OrderContent() {
 
     </main>
 
+    {/* Mobile Sticky Cart Button */}
+    {totalItems > 0 && !isCartOpen && (
+      <div className="fixed bottom-6 left-6 right-6 z-40 md:hidden animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <button 
+          onClick={() => setIsCartOpen(true)}
+          className="w-full bg-black/60 backdrop-blur-xl text-white font-bold py-4 rounded-full shadow-2xl flex items-center justify-between px-6 hover:scale-[1.02] active:scale-95 transition-all border border-white/20"
+        >
+          <span className="flex items-center gap-2">
+            <BsCart size={20} />
+            View Cart
+          </span>
+          <span className="bg-[#a7dff4] text-black text-xs font-bold px-2 py-1 rounded-md">
+            {totalItems} {totalItems === 1 ? 'item' : 'items'} • ₱{itemsTotal.toFixed(2)}
+          </span>
+        </button>
+      </div>
+    )}
+
     <CartSidePanel
       isOpen={isCartOpen}
       onClose={() => setIsCartOpen(false)}
