@@ -30,7 +30,7 @@ export default function OrderPage() {
           for (const id in parsed) {
             // Ensure the item exists in our master list before adding it to the cart
             if (ORDER_ITEMS.some(item => item.id === Number(id))) {
-              validatedCart[id] = parsed[id];
+              validatedCart[Number(id)] = parsed[id];
             }
           }
           setCart(validatedCart);
