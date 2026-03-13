@@ -196,7 +196,7 @@ function DashboardSkeleton() {
 
 function AnimatedCounter({ value }: { value: number }) {
   const [displayValue, setDisplayValue] = useState(0);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number | null>(null);
   const startValueRef = useRef(0);
 
   useEffect(() => {
