@@ -72,12 +72,14 @@ export default function PaymentPage() {
     if (!order || !Array.isArray(order.items)) {
       return 0;
     }
-    return order.items.reduce((acc: number, item: any) => {
+    const itemsTotal = order.items.reduce((acc: number, item: any) => {
       // Safely access price and quantity, providing defaults if they are not numbers.
       const price = typeof item.price === 'number' ? item.price : 0;
       const quantity = typeof item.quantity === 'number' ? item.quantity : 1;
       return acc + price * quantity;
     }, 0);
+    // Get delivery fee from the nested customer object
+    return itemsTotal + (order.customer?.deliveryFee || 0);
   }, [order]);
 
   const handleValidateRewardsId = async () => {
@@ -142,9 +144,13 @@ export default function PaymentPage() {
 
         // 2. Prepare Order Data
         const finalTotal = calculatedTotal - discount;
+        // Explicitly construct the final order data to prevent stale or unexpected properties
+        // from localStorage from being sent to the database. This is safer than spreading `...order`.
         const orderData = {
-            ...order,
-            total: calculatedTotal, // Overwrite the old total with the accurate one
+            customer: order.customer,
+            items: order.items,
+            total: calculatedTotal,
+            tracking_number: order.tracking_number,
             paymentMethod,
             proofUrl,
             voucherCode: discount > 0 ? voucherCode : null,
@@ -158,24 +164,6 @@ export default function PaymentPage() {
         const { error: insertError } = await supabase.from('orders').insert([orderData]);
 
         if (insertError) throw insertError;
-
-        // Send Email via EmailJS
-        try {
-          await emailjs.send(
-            process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || "",
-            process.env.NEXT_PUBLIC_EMAILJS_ORDER_TEMPLATE_ID || "",
-            {
-              to_name: order.customer.name,
-              to_email: order.customer.email,
-              tracking_number: order.tracking_number,
-              total: finalTotal.toFixed(2),
-              order_items: order.items.map((item: any) => `${item.quantity}x ${item.name}`).join('\n'),
-            },
-            process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || ""
-          );
-        } catch (emailError) {
-          console.error("Failed to send email:", emailError);
-        }
 
         // 4. Increment Voucher Usage
         if (discount > 0 && voucherCode) {
@@ -242,6 +230,29 @@ export default function PaymentPage() {
           redirectUrl += `&pointsEarned=${pointsToAdd}`;
         }
         router.push(redirectUrl);
+
+        // 7. Send Email Confirmation (non-critical, done after redirect is queued)
+        try {
+          const emailPayload = {
+            to_name: order.customer.name,
+            to_email: order.customer.email,
+            tracking_number: order.tracking_number,
+            total: finalTotal.toFixed(2),
+            order_items: order.items
+              .filter((item: any) => item.quantity > 0)
+              .map((item: any) => `${item.quantity}x ${item.name}`)
+              .join('\n')
+              + (order.customer?.deliveryFee > 0 ? `\n\nDelivery Fee: ₱${order.customer.deliveryFee.toFixed(2)}` : ''),
+          };
+          await emailjs.send(
+            process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || "",
+            process.env.NEXT_PUBLIC_EMAILJS_ORDER_TEMPLATE_ID || "", // Note: Ensure your EmailJS template can display this multi-line string.
+            emailPayload,
+            process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || ""
+          );
+        } catch (emailError) {
+          console.error("Failed to send confirmation email:", emailError);
+        }
 
     } catch (error) {
         console.error("Error saving order:", error);
@@ -448,6 +459,12 @@ export default function PaymentPage() {
                             </div>
                         );
                     })}
+                    {order.deliveryFee > 0 && (
+                        <div className="flex justify-between items-center text-sm border-t border-dashed border-gray-200 pt-2 mt-2">
+                             <span className="text-gray-600">Delivery Fee</span>
+                             <span className="font-medium text-gray-800">₱{order.deliveryFee.toFixed(2)}</span>
+                        </div>
+                    )}
                 </div>
                 
                 <div className="bg-gray-50 p-6 rounded-xl space-y-2 text-sm">

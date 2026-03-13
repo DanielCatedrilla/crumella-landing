@@ -47,14 +47,24 @@ export default function CheckoutPage() {
     const savedCart = localStorage.getItem("chewy_cart_items");
     if (savedCart) {
       try {
-        const parsedCart = JSON.parse(savedCart);
-        // Check if cart is empty or invalid
-        if (Object.keys(parsedCart).length === 0 && Array.isArray(parsedCart) === false) {
-             router.push("/order");
-        } else if (Array.isArray(parsedCart) && parsedCart.length === 0) {
-             router.push("/order");
+        const parsed = JSON.parse(savedCart);
+        // Validate cart: ensure it's an object and all items exist in ORDER_ITEMS.
+        if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+          const validatedCart: { [key: number]: number } = {};
+          for (const id in parsed) {
+            if (ORDER_ITEMS.some(item => item.id === Number(id))) {
+              validatedCart[Number(id)] = parsed[id];
+            }
+          }
+          
+          if (Object.keys(validatedCart).length > 0) {
+            setCart(validatedCart);
+          } else {
+            router.push("/order"); // Redirect if cart is empty after validation
+          }
+        } else {
+          router.push("/order"); // Redirect if cart is not a valid object
         }
-        setCart(parsedCart);
       } catch (error) {
         console.error("Error loading saved cart:", error);
         router.push("/order");
@@ -86,25 +96,16 @@ export default function CheckoutPage() {
   let totalItems = 0;
   let itemsTotal = 0;
 
-  if (cart) {
-    if (Array.isArray(cart)) {
-        // Handle array format (likely from points/redemption page)
-        cart.forEach((item: any) => {
-            totalItems += item.quantity || 1;
-            itemsTotal += (item.price || 0) * (item.quantity || 1);
-        });
-    } else {
-        // Handle object format (from order page)
-        totalItems = Object.values(cart).reduce((a: any, b: any) => a + b, 0) as number;
-        itemsTotal = Object.entries(cart).reduce((total, [id, qty]) => {
-            const item = ORDER_ITEMS.find(i => i.id === Number(id));
-            const price = item?.price || 4.00;
-            
-            // Calculate free quantity based on redemption list
-            const freeQty = redeemedItems.filter(r => r.redeemed_item_id === Number(id)).length;
-            return total + (price * Math.max(0, (qty as number) - freeQty));
-        }, 0);
-    }
+  // Ensure cart is a valid object before calculating totals
+  if (cart && typeof cart === 'object' && !Array.isArray(cart)) {
+    totalItems = Object.values(cart).reduce((a: number, b: number) => a + b, 0);
+    itemsTotal = Object.entries(cart).reduce((total, [id, qty]) => {
+        const item = ORDER_ITEMS.find(i => i.id === Number(id));
+        const price = item?.price || 4.00;
+        
+        const freeQty = redeemedItems.filter(r => r.redeemed_item_id === Number(id)).length;
+        return total + (price * Math.max(0, (qty as number) - freeQty));
+    }, 0);
   }
 
   // Calculate Delivery Fee
@@ -207,6 +208,7 @@ export default function CheckoutPage() {
     const customerData = {
       ...formData,
       address: finalAddress,
+      deliveryFee: deliveryFee, // Add deliveryFee to the customer object
       googleMapsLink: isDelivery ? formData.googleMapsLink : "",
       latitude: isDelivery ? formData.latitude : null,
       longitude: isDelivery ? formData.longitude : null,
@@ -215,15 +217,20 @@ export default function CheckoutPage() {
 
     // Normalize items for the order object
     let orderItems: any[] = [];
-    if (Array.isArray(cart)) {
-        orderItems = cart;
-    } else if (cart) {
+    if (cart) {
         // Split items into free (redeemed) and paid
         Object.entries(cart).forEach(([idStr, qty]) => {
             const id = Number(idStr);
             const quantity = qty as number;
             const item = ORDER_ITEMS.find(i => i.id === id);
-            const regularPrice = item?.price || 4.00;
+
+            // Defensive check: If an item from the cart is somehow not in the master list, skip it.
+            // This prevents creating an order with undefined items, which causes payment to fail.
+            if (!item) {
+              console.warn(`Item with ID ${id} not found in ORDER_ITEMS during checkout. Skipping.`);
+              return;
+            }
+            const regularPrice = item.price || 4.00;
             
             const freeQty = redeemedItems.filter(r => r.redeemed_item_id === id).length;
             const paidQty = Math.max(0, quantity - freeQty);
@@ -231,8 +238,8 @@ export default function CheckoutPage() {
 
             if (actualFreeQty > 0) {
                 orderItems.push({
-                    id: item?.id,
-                    name: item?.name,
+                    id: item.id,
+                    name: item.name,
                     price: 0,
                     quantity: actualFreeQty,
                     isRedeemed: true
@@ -241,10 +248,11 @@ export default function CheckoutPage() {
             
             if (paidQty > 0) {
                 orderItems.push({
-                    id: item?.id,
-                    name: item?.name,
+                    id: item.id,
+                    name: item.name,
                     price: regularPrice,
-                    quantity: paidQty
+                    quantity: paidQty,
+                    isRedeemed: false
                 });
             }
         });
