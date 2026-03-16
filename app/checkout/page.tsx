@@ -12,6 +12,15 @@ const LocationPicker = dynamic(() => import('../../components/LocationPicker'), 
 
 const STORE_LOCATION = { lat: 10.7819, lng: 122.5438 }; // Store coordinates (GT Town Center Pavia)
 
+const generateTrackingCode = () => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let randomPart = '';
+  for (let i = 0; i < 5; i++) {
+    randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `CRML-${randomPart}`;
+};
+
 export default function CheckoutPage() {
   const [cart, setCart] = useState<{ [key: number]: number } | null>(null);
   const [redeemedItems, setRedeemedItems] = useState<any[]>([]);
@@ -146,12 +155,16 @@ export default function CheckoutPage() {
       
       let isValid = false;
       if (formData.orderType === "delivery") {
-        if ([2, 4, 6].includes(day)) isValid = true;
+        if (day !== 0) isValid = true;
       } else if (formData.orderType === "pickup") {
         if (formData.pickupLocation === "Robinsons Place Jaro") {
           if ([2, 4].includes(day)) isValid = true;
         } else if (formData.pickupLocation === "SM City Iloilo") {
           if (day === 6) isValid = true;
+        } else if (formData.pickupLocation === "ISAT U") {
+          // Available every day except Fridays and March 18, 2026
+          const isMarch18 = d.getFullYear() === 2026 && d.getMonth() === 2 && d.getDate() === 18;
+          if (![0, 5, 6].includes(day) && !isMarch18) isValid = true;
         }
       }
       
@@ -169,15 +182,6 @@ export default function CheckoutPage() {
   };
 
   const availableDates = getAvailableDates();
-
-  const generateTrackingCode = () => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let randomPart = '';
-    for (let i = 0; i < 5; i++) {
-      randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return `CRML-${randomPart}`;
-  };
 
   const handleLocationSelect = useCallback((lat: number, lng: number) => {
     setFormData((prev) => ({
@@ -336,6 +340,7 @@ export default function CheckoutPage() {
                         <option value="">Select a location...</option>
                         <option value="SM City Iloilo">SM City Iloilo</option>
                         <option value="Robinsons Place Jaro">Robinsons Place Jaro</option>
+                        <option value="ISAT U">ISAT U</option>
                       </select>
                       <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
@@ -377,7 +382,7 @@ export default function CheckoutPage() {
                     </div>
                   </div>
                   <p className="text-xs text-gray-400 mt-2 ml-1 font-medium">
-                    {formData.orderType === "delivery" && "Available: Tuesdays, Thursdays, Saturdays"}
+                    {formData.orderType === "delivery" && "Available: Monday – Saturday"}
                     {formData.orderType === "pickup" && formData.pickupLocation === "Robinsons Place Jaro" && "Available: Tuesdays, Thursdays"}
                     {formData.orderType === "pickup" && formData.pickupLocation === "SM City Iloilo" && "Available: Saturdays"}
                   </p>
