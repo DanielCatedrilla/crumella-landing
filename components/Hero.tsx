@@ -12,28 +12,41 @@ import 'swiper/css/effect-fade';
 const SLIDES = [
   {
     id: 1,
-    src: "/DS/DS1.png",
-    mobileSrc: "/MS/MS1.png",
+    src: "/DS/DS22.png",
+    mobileSrc: "/MS/MS16.png",
     alt: "Hero Slide 1",
   },
   {
     id: 2,
-    src: "/DS/DS6.png",
-    mobileSrc: "/MS/MS6.png",
+    src: "/DS/DS18.png",
+    mobileSrc: "/MS/MS17.png",
     alt: "Hero Slide 2",
   },
   {
     id: 3,
-    src: "/DS/DS7.png",
-    mobileSrc: "/MS/MS7.png",
+    src: "/DS/DS19.png",
+    mobileSrc: "/MS/MS18.png",
     alt: "Hero Slide 3",
+  },
+    {
+    id: 4,
+    src: "/DS/DS20.png",
+    mobileSrc: "/MS/MS19.png",
+    alt: "Hero Slide 4",
   },
   {
     id: 5,
-    src: "/DS/DS9.png",
-    mobileSrc: "/MS/MS9.png",
+    src: "/DS/DS21.png",
+    mobileSrc: "/MS/MS20.png",
     alt: "Hero Slide 5",
   },
+    {
+    id: 6,
+    src: "/DS/DS17.png",
+    mobileSrc: "/MS/MS21.png",
+    alt: "Hero Slide 6",
+  },
+
 ];
 
 const Slider = () => {
@@ -46,7 +59,7 @@ const Slider = () => {
 
   return (
     <section className="bg-[#fffdf7]">
-    <div className="h-[85vh] md:h-screen w-full relative z-0">
+    <div className="h-[60vh] md:h-screen w-full relative z-0">
       <Swiper
         className="h-full w-full"
         spaceBetween={0}
@@ -69,6 +82,7 @@ const Slider = () => {
                   fill
                   sizes="100vw"
                   className="object-cover"
+                  quality={90}
                   priority={index === 0}
                 />
               </div>
@@ -76,11 +90,12 @@ const Slider = () => {
               {/* Mobile Image - Hidden on Desktop */}
               <div className="block md:hidden w-full h-full relative">
                 <Image
-                  src={slide.mobileSrc || slide.src} // Fallback to desktop image if no mobileSrc
+                  src={slide.mobileSrc || slide.src}
                   alt={slide.alt}
                   fill
-                  sizes="100vw"
-                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw"
+                  className="object-cover object-center"
+                  quality={90}
                   priority={index === 0}
                 />
               </div>
