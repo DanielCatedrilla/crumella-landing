@@ -13,7 +13,7 @@ const SLIDES = [
   {
     id: 1,
     src: "/DS/DS23.png",
-    mobileSrc: "/MS/MS22.png",
+    mobileSrc: "/MS/MS23.png",
     alt: "Hero Slide 1",
   },
   {
