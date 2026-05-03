@@ -12,32 +12,32 @@ import 'swiper/css/effect-fade';
 const SLIDES = [
   {
     id: 1,
-    src: "/DS/DS22.png",
-    mobileSrc: "/MS/MS16.png",
+    src: "/DS/DS23.png",
+    mobileSrc: "/MS/MS22.png",
     alt: "Hero Slide 1",
   },
   {
     id: 2,
-    src: "/DS/DS18.png",
+    src: "/DS/DS22.png",
     mobileSrc: "/MS/MS17.png",
     alt: "Hero Slide 2",
   },
   {
     id: 3,
-    src: "/DS/DS19.png",
+    src: "/DS/DS18.png",
     mobileSrc: "/MS/MS18.png",
     alt: "Hero Slide 3",
   },
     {
     id: 4,
-    src: "/DS/DS20.png",
+    src: "/DS/DS19.png",
     mobileSrc: "/MS/MS19.png",
     alt: "Hero Slide 4",
   },
   {
     id: 5,
     src: "/DS/DS21.png",
-    mobileSrc: "/MS/MS20.png",
+    mobileSrc: "/MS/MS16.png",
     alt: "Hero Slide 5",
   },
     {
