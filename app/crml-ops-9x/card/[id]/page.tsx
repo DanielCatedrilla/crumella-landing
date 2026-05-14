@@ -203,7 +203,7 @@ export default function AdminCardPage({ params }: { params: Promise<{ id: string
           <button type="submit" className="w-full bg-black text-white font-bold py-3 rounded-xl hover:bg-gray-800 transition-colors cursor-pointer">
             Login
           </button>
-          <Link href="/admin" className="block text-center text-sm text-gray-600 mt-4 hover:text-black">Back to Admin Dashboard</Link>
+          <Link href="/crml-ops-9x" className="block text-center text-sm text-gray-600 mt-4 hover:text-black">Back to Admin Dashboard</Link>
         </form>
       </div>
     );
@@ -233,7 +233,7 @@ export default function AdminCardPage({ params }: { params: Promise<{ id: string
           <div className="bg-white/80 backdrop-blur-xl border border-red-100 text-red-600 p-8 rounded-3xl text-center shadow-xl">
             <h3 className="font-bold text-lg mb-2">Error</h3>
             <p className="text-sm mb-6">{error}</p>
-            <Link href="/admin" className="mt-4 inline-block bg-black text-white font-bold py-2 px-4 rounded-full hover:bg-gray-800 transition-colors">
+            <Link href="/crml-ops-9x" className="mt-4 inline-block bg-black text-white font-bold py-2 px-4 rounded-full hover:bg-gray-800 transition-colors">
                 Back to Admin
             </Link>
           </div>
@@ -323,7 +323,7 @@ export default function AdminCardPage({ params }: { params: Promise<{ id: string
                 </form>
             </div>
             <div className="text-center mt-10">
-                <Link href="/admin" className="text-sm font-bold text-slate-400 hover:text-slate-800 transition-colors">
+                <Link href="/crml-ops-9x" className="text-sm font-bold text-slate-400 hover:text-slate-800 transition-colors">
                     ← Back to Admin Dashboard
                 </Link>
             </div>

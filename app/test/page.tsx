@@ -85,7 +85,7 @@ export default function TestVoucherPage() {
           </div>
         )}
 
-        <Link href="/admin" className="block text-center text-sm text-gray-500 mt-4 hover:underline">
+        <Link href="/crml-ops-9x" className="block text-center text-sm text-gray-500 mt-4 hover:underline">
           Go to Admin Dashboard to Verify
         </Link>
       </div>
