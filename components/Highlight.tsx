@@ -65,8 +65,8 @@ export default function Highlight() {
 
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
         
-        {/* Celebrating Women Card */}
-        <Link href="/gallery" className="group relative h-80 md:h-96 w-full overflow-hidden rounded-3xl bg-[#ddb5fe] p-8 shadow-md transition-all duration-500 hover:shadow-xl hover:-translate-y-1 cursor-pointer md:col-span-2 block">
+        {/* Celebrating Moms Card */}
+        <Link href="/mothers-day" className="group relative h-80 md:h-96 w-full overflow-hidden rounded-3xl bg-[#a6dff6] p-8 shadow-md transition-all duration-500 hover:shadow-xl hover:-translate-y-1 cursor-pointer md:col-span-2 block">
           {/* Background Slideshow */}
           {minisImages.map((src, index) => (
             <div
@@ -75,25 +75,28 @@ export default function Highlight() {
                 index === currentMinisIndex ? "opacity-100" : "opacity-0"
               }`}
             >
-              <Image src={src} alt="Celebrating Women" fill className="object-cover" />
+              <Image src={src} alt="Celebrating Moms" fill className="object-cover" />
               <div className="absolute inset-0 bg-black/40"></div>
             </div>
           ))}
           <div className="relative z-10 flex h-full flex-col justify-between">
             <div>
+              <span className="inline-block mb-2 text-xs font-bold uppercase tracking-[0.2em] text-[#a6dff6] bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
+                Special
+              </span>
               <h2 className="text-3xl font-black text-white transition-transform duration-300 group-hover:scale-105 origin-left">
-                Celebrating Women
+                Celebrating Moms
               </h2>
               <p className="mt-2 text-lg font-medium text-white">
-                A tribute to the women who inspire us.
+                Sweet Like Mom: A Mother&apos;s Day Special
               </p>
             </div>
-            <span className="self-start rounded-full bg-white px-6 py-2 text-sm font-bold text-[#9333ea] transition-colors duration-300 group-hover:bg-purple-50">
-              View Gallery &rarr;
+            <span className="self-start rounded-full bg-white px-6 py-2 text-sm font-bold text-black transition-colors duration-300 group-hover:bg-gray-100">
+              See More &rarr;
             </span>
           </div>
           {/* Decorative Blur */}
-          <div className="absolute -bottom-12 -right-12 h-48 w-48 rounded-full bg-[#c084fc] opacity-50 blur-2xl transition-transform duration-700 group-hover:scale-150" />
+          <div className="absolute -bottom-12 -right-12 h-48 w-48 rounded-full bg-white opacity-20 blur-2xl transition-transform duration-700 group-hover:scale-150" />
         </Link>
 
         {/* Featured Creators Card */}

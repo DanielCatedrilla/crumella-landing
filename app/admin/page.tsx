@@ -9,6 +9,7 @@ export default function AdminPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authChecking, setAuthChecking] = useState(true);
   const [vouchers, setVouchers] = useState<any[]>([]);
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'orders' | 'vouchers' | 'statistics' | 'feedbacks'>('orders');
@@ -17,29 +18,87 @@ export default function AdminPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    const storedAuth = localStorage.getItem("adminAuthenticated");
-    if (storedAuth === "true") {
-      setIsAuthenticated(true);
-    }
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+      setAuthChecking(false);
+    };
+    checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchOrders();
-      fetchVouchers();
-      fetchFeedbacks();
+  const fetchOrders = async (background = false) => {
+    if (!background) setLoading(true);
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .order('createdAt', { ascending: false });
 
-      const channel = supabase
-        .channel('realtime orders')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-          fetchOrders(true);
-        })
-        .subscribe();
+    if (error) {
+      console.error("Error fetching orders:", error);
+    } else {
+      const sortedData = (data || []).sort((a, b) => {
+        const dateA = a.customer?.date || '9999-12-31';
+        const dateB = b.customer?.date || '9999-12-31';
+        if (dateA !== dateB) return dateA.localeCompare(dateB);
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
+        const getTimeVal = (t: string) => {
+          if (!t) return 9999;
+          const match = t.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm|AM|PM)?/);
+          if (!match) return 9999;
+          let h = parseInt(match[1]);
+          const m = match[2] ? parseInt(match[2]) : 0;
+          const mer = match[3]?.toLowerCase();
+          if (mer === 'pm' && h < 12) h += 12;
+          if (mer === 'am' && h === 12) h = 0;
+          return h * 60 + m;
+        };
+        return getTimeVal(a.customer?.timeWindow || '') - getTimeVal(b.customer?.timeWindow || '');
+      });
+      setOrders(sortedData);
     }
+    setLoading(false);
+  };
+
+  const fetchVouchers = async () => {
+    const { data, error } = await supabase
+      .from('vouchers')
+      .select('*')
+      .order('id', { ascending: true });
+    if (!error) setVouchers(data || []);
+  };
+
+  const fetchFeedbacks = async () => {
+    const { data, error } = await supabase
+      .from('feedbacks')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (!error) setFeedbacks(data || []);
+  };
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const load = async () => {
+      await fetchOrders();
+      await fetchVouchers();
+      await fetchFeedbacks();
+    };
+    void load();
+
+    const channel = supabase
+      .channel('realtime orders')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        void fetchOrders(true);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [isAuthenticated]);
 
   const stats = React.useMemo(() => {
@@ -145,79 +204,22 @@ export default function AdminPage() {
     );
   });
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const adminSecret = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
-    if (adminSecret && password === adminSecret) {
-      setIsAuthenticated(true);
-      localStorage.setItem("adminAuthenticated", "true");
-    } else {
+    const { error } = await supabase.auth.signInWithPassword({
+      email: "admin@eatcrumella.com",
+      password,
+    });
+    if (error) {
       alert("Incorrect password");
     }
   };
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setPassword("");
-    localStorage.removeItem("adminAuthenticated");
   };
 
-  const fetchOrders = async (background = false) => {
-    if (!background) setLoading(true);
-    const { data, error } = await supabase
-      .from('orders')
-      .select('*')
-      .order('createdAt', { ascending: false });
-
-    if (error) {
-      console.error("Error fetching orders:", error);
-    } else {
-      const sortedData = (data || []).sort((a, b) => {
-        // Sort by Date (Ascending) - Earliest date first
-        const dateA = a.customer?.date || '9999-12-31';
-        const dateB = b.customer?.date || '9999-12-31';
-        if (dateA !== dateB) return dateA.localeCompare(dateB);
-
-        // Sort by Time (Ascending) - Earliest time first
-        const getTimeVal = (t: string) => {
-          if (!t) return 9999;
-          const match = t.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm|AM|PM)?/);
-          if (!match) return 9999;
-          let h = parseInt(match[1]);
-          const m = match[2] ? parseInt(match[2]) : 0;
-          const mer = match[3]?.toLowerCase();
-          if (mer === 'pm' && h < 12) h += 12;
-          if (mer === 'am' && h === 12) h = 0;
-          return h * 60 + m;
-        };
-        return getTimeVal(a.customer?.timeWindow || '') - getTimeVal(b.customer?.timeWindow || '');
-      });
-      setOrders(sortedData);
-    }
-    setLoading(false);
-  };
-
-  const fetchVouchers = async () => {
-    const { data, error } = await supabase
-      .from('vouchers')
-      .select('*')
-      .order('id', { ascending: true });
-
-    if (!error) {
-      setVouchers(data || []);
-    }
-  };
-
-  const fetchFeedbacks = async () => {
-    const { data, error } = await supabase
-      .from('feedbacks')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (!error) {
-      setFeedbacks(data || []);
-    }
-  };
 
   const deleteFeedback = async (id: any) => {
     if (!window.confirm("Are you sure you want to delete this feedback?")) return;
@@ -428,6 +430,14 @@ export default function AdminPage() {
     printWindow.document.write(htmlContent);
     printWindow.document.close();
   };
+
+  if (authChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-gray-500 text-sm">Checking session…</p>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (

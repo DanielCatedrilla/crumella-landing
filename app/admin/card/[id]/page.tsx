@@ -2,7 +2,6 @@
 import React, { useState, useEffect, use } from "react";
 import { supabase } from "../../../../components/supabase";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 // Re-using the LoyaltyCard component from the points page for consistent UI
 function LoyaltyCard({ user }: { user: any }) {
@@ -68,16 +67,21 @@ export default function AdminCardPage({ params }: { params: Promise<{ id: string
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const uniqueId = id;
-  const router = useRouter();
 
   // Check for admin authentication
   useEffect(() => {
-    const storedAuth = localStorage.getItem("adminAuthenticated");
-    if (storedAuth === "true") {
-      setIsAuthenticated(true);
-    } else {
-        setLoading(false);
-    }
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+      if (!session) setLoading(false);
+    };
+    checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+      if (!session) setLoading(false);
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   // Fetch card data if authenticated
@@ -105,15 +109,13 @@ export default function AdminCardPage({ params }: { params: Promise<{ id: string
     }
   }, [isAuthenticated, uniqueId]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const adminSecret = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
-    if (adminSecret && password === adminSecret) {
-      localStorage.setItem("adminAuthenticated", "true");
-      setIsAuthenticated(true);
-    } else {
-      alert("Incorrect password");
-    }
+    const { error } = await supabase.auth.signInWithPassword({
+      email: "admin@eatcrumella.com",
+      password,
+    });
+    if (error) alert("Incorrect password");
   };
 
   const handleTransaction = async (e: React.FormEvent) => {
