@@ -112,7 +112,7 @@ export default function AdminCardPage({ params }: { params: Promise<{ id: string
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const { error } = await supabase.auth.signInWithPassword({
-      email: "admin@eatcrumella.com",
+      email: "compsci.daniel23@gmail.com",
       password,
     });
     if (error) alert("Incorrect password");
