@@ -14,16 +14,26 @@ export type MenuItem = {
     logoSrc?: string;
     category?: string;
     price?: number;
+    comingSoon?: boolean;
+    photos?: string[];
+    tags?: string[];
 };
 
 export const MENU_ITEMS: MenuItem[] = [
     {
+        id: 8,
+        name: "Hazelnut Lava Cookie",
+        description: "A rich, indulgent cookie with a warm Nutella® lava center that flows with every bite. Pure chocolate-hazelnut bliss.",
+        src: "/MENU2/NL1.png",
+        badge: "New Flavor",
+        category: "Single Flavors",
+    },
+    {
         id: 2,
         name: "Biscoff® Cookie",
-        description: "Made with Lotus Biscoff®, this cookie delivers a rich caramelized flavor with warm, spiced notes in every bite.",
+        description: "Made with Biscoff®, this cookie delivers a rich caramelized flavor with warm, spiced notes in every bite.",
         src: "/MENU2/BC.png",
         badge: "Best Seller",
-        logoSrc: "/BiscoffLogo2.jpg",
         category: "Single Flavors",
     },
     {
@@ -68,55 +78,85 @@ export const MENU_ITEMS: MenuItem[] = [
 export const ORDER_ITEMS: MenuItem[] = [
 
     {
+        id: 11,
+        name: "Hazelnut Lava Cookie",
+        badge: "New Flavor",
+        src: "/CS/NL.JPG",
+        photos: ["/CS/NL.JPG", "/CS/NL12.JPG", "/CS/NL2.JPG"],
+        category: "Box of 4 - Single Flavor Bundles",
+        price: 380.00,
+        tags: ["Nutella®", "Gooey", "Lava"],
+        description: "A soft, chewy cookie with a warm Nutella® lava center that oozes out with every bite.",
+    },
+    {
         id: 2,
         name: "Biscoff® Cookie",
         badge: "Best Seller",
         src: "/CS/Biscoff.png",
+        photos: ["/CS/Biscoff.png", "/CS/Biscoff1.jpg", "/CS/Biscoff2.jpg"],
         category: "Box of 4 - Single Flavor Bundles",
         price: 350.00,
+        tags: ["Lotus Biscoff®", "Caramelized", "Spiced"],
+        description: "Made with Biscoff®, this cookie delivers a rich caramelized flavor with warm, spiced notes in every bite.",
     },
     {
         id: 3,
         name: "Matcha Cookie",
         src: "/CS/Matcha.png",
+        photos: ["/CS/Matcha.png", "/CS/Matcha1.jpg", "/CS/Matcha2.jpg"],
         category: "Box of 4 - Single Flavor Bundles",
         price: 350.00,
+        tags: ["Green Tea", "Earthy", "Subtle Sweetness"],
+        description: "A refined balance of earthy matcha and subtle sweetness, baked into a soft, flavorful cookie that's calm, elegant, and deeply satisfying.",
     },
     {
         id: 4,
         name: "Chocolate Chunk Cookie",
         badge: "All time favorite",
         src: "/CS/CCH.png",
+        photos: ["/CS/CCH.png", "/CS/CCH1.jpg", "/CS/CCH2.jpg"],
         category: "Box of 4 - Single Flavor Bundles",
         price: 300.00,
+        tags: ["Dark Chocolate", "Chunks", "Classic"],
+        description: "Classic and timeless, this cookie features generous chunks of premium chocolate baked into a soft, chewy base.",
     },
     {
         id: 5,
         name: "Double Chocolate Cookie",
         src: "/CS/DCH.png",
+        photos: ["/CS/DCH.png", "/CS/DCH1.jpg", "/CS/DCH2.jpg"],
         category: "Box of 4 - Single Flavor Bundles",
         price: 320.00,
+        tags: ["Double Choco", "Rich", "Indulgent"],
+        description: "For those who love it rich, this cookie blends a chocolate base with melted chocolate pieces for a deep, indulgent bite that doesn't hold back.",
     },
     {
         id: 6,
         name: "S'mores Cookie",
         src: "/CS/SM.png",
+        photos: ["/CS/SM.png", "/CS/SM1.jpg", "/CS/SM2.jpg"],
         category: "Box of 4 - Single Flavor Bundles",
         price: 320.00,
+        tags: ["Marshmallow", "Chocolate", "Graham"],
+        description: "Inspired by the classic treat, this cookie combines chocolate, a soft marshmallow center, and a golden base.",
     },
     {
         id: 7,
         name: "Red Velvet Cookie",
         badge: "Best seller",
         src: "/CS/RV.png",
+        photos: ["/CS/RV.png", "/CS/RV1.jpg", "/CS/RV2.jpg"],
         category: "Box of 4 - Single Flavor Bundles",
         price: 380.00,
+        tags: ["Cream Cheese", "Red Velvet", "Sweet"],
+        description: "A soft red velvet cookie with a creamy cream cheese filling inside.",
     },
     {
         id: 10,
-        name: "Chocolate Chunk Minis w/ Nutella Dip",
+        name: "Chocolate Chunk Minis w/ Nutella® Dip",
         badge: "New Arrival",
         src: "/HS/HS7.png",
+        photos: ["/HS/HS7.png", "/HS/HS7.png", "/HS/HS7.png"],
         category: "Box of 12 - Crumella Minis",
         price: 199.00,
     },
@@ -238,13 +278,20 @@ export default function Menu(){
                             {/* Image Side */}
                             <div className="w-full md:w-1/2">
                                 <div className="aspect-square w-full max-w-sm mx-auto flex items-center justify-center relative transition-transform duration-500 ease-out scale-110 group-hover:scale-125 group-hover:rotate-6">
-                                    <Image 
-                                        src={item.src} 
-                                        alt={item.name}
-                                        fill
-                                        className="object-contain drop-shadow-2xl"
-                                        sizes="(max-width: 768px) 100vw, 384px"
-                                    />
+                                    {item.comingSoon ? (
+                                        <div className="w-full h-full rounded-3xl bg-gradient-to-br from-[#a6dff6]/30 to-[#a6dff6]/10 border-2 border-dashed border-[#a6dff6] flex flex-col items-center justify-center gap-3">
+                                            <span className="text-6xl">🍫</span>
+                                            <span className="text-sm font-bold text-gray-400 uppercase tracking-widest">Photo Coming Soon</span>
+                                        </div>
+                                    ) : (
+                                        <Image
+                                            src={item.src}
+                                            alt={item.name}
+                                            fill
+                                            className="object-contain drop-shadow-2xl"
+                                            sizes="(max-width: 768px) 100vw, 384px"
+                                        />
+                                    )}
                                 </div>
                             </div>
 

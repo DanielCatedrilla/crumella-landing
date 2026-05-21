@@ -1,7 +1,10 @@
-import React, { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import Image from 'next/image';
-import { ORDER_ITEMS } from './Menu';
+import Link from 'next/link';
+import { ORDER_ITEMS, MENU_ITEMS } from './Menu';
 import { BsCart } from 'react-icons/bs';
+
+const PREMIUM_BUNDLE_ID = 9;
 
 interface CartSidePanelProps {
   isOpen: boolean;
@@ -14,6 +17,20 @@ interface CartSidePanelProps {
   redeemedItemIds?: number[];
 }
 
+type DisplayItem = {
+  id: number;
+  quantity: number;
+  src: string;
+  name: string;
+  price: number;
+  wasJustAdded: boolean;
+  isBundleBox: boolean;
+  boxConfig: Record<number, number> | null;
+};
+
+const configKey = (config: Record<number, number>) =>
+  JSON.stringify(Object.entries(config).sort((a, b) => Number(a[0]) - Number(b[0])));
+
 export default function CartSidePanel({
   isOpen,
   onClose,
@@ -24,21 +41,83 @@ export default function CartSidePanel({
   onProceedToCheckout,
   redeemedItemIds,
 }: CartSidePanelProps) {
-  const prevCartRef = useRef(cart);
+  const prevCartRef = useRef<{ [key: number]: number }>({});
+  const prevTotalRef = useRef(totalItems);
+  const [justAddedIds, setJustAddedIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
+    if (prevTotalRef.current > 0 && totalItems === 0 && isOpen) {
+      onClose();
+    }
+    prevTotalRef.current = totalItems;
+  }, [totalItems, isOpen, onClose]);
+
+  // Read fresh from localStorage every render so stale state never causes grouping bugs.
+  let bundleConfigs: Record<number, Record<number, number>[]> = {};
+  try {
+    bundleConfigs = JSON.parse(localStorage.getItem("crumella_bundle_configs") || "{}");
+  } catch {}
+
+  useEffect(() => {
+    const newlyAdded = new Set<number>();
+    Object.entries(cart).forEach(([idStr, qty]) => {
+      const id = Number(idStr);
+      if (qty > (prevCartRef.current[id] || 0)) newlyAdded.add(id);
+    });
     prevCartRef.current = cart;
+
+    if (newlyAdded.size > 0) {
+      const t1 = setTimeout(() => setJustAddedIds(newlyAdded), 0);
+      const t2 = setTimeout(() => setJustAddedIds(new Set()), 800);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
+    }
   }, [cart]);
 
-  const prevCart = prevCartRef.current;
+  const removeBundleConfig = (config: Record<number, number>) => {
+    try {
+      const raw = localStorage.getItem("crumella_bundle_configs");
+      if (raw) {
+        const all = JSON.parse(raw);
+        if (Array.isArray(all[PREMIUM_BUNDLE_ID])) {
+          const k = configKey(config);
+          const idx = (all[PREMIUM_BUNDLE_ID] as Record<number, number>[])
+            .findIndex(c => configKey(c) === k);
+          if (idx !== -1) all[PREMIUM_BUNDLE_ID].splice(idx, 1);
+          localStorage.setItem("crumella_bundle_configs", JSON.stringify(all));
+        }
+      }
+    } catch {}
+    updateQuantity(PREMIUM_BUNDLE_ID, -1);
+  };
 
-  const cartItems = Object.entries(cart).map(([idStr, quantity]) => {
+
+  const displayItems: DisplayItem[] = Object.entries(cart).flatMap(([idStr, quantity]): DisplayItem[] => {
     const id = Number(idStr);
     const item = ORDER_ITEMS.find(i => i.id === id);
-    const prevQuantity = prevCart[id] || 0;
-    const wasJustAdded = quantity > prevQuantity;
+    const base = {
+      id,
+      src: item?.src || '',
+      name: item?.name || 'Unknown Item',
+      price: item?.price || 0,
+      wasJustAdded: justAddedIds.has(id),
+    };
 
-    return { ...item, id, quantity, src: item?.src || '', name: item?.name || 'Unknown Item', price: item?.price || 0, wasJustAdded };
+    if (id === PREMIUM_BUNDLE_ID) {
+      const raw = bundleConfigs[PREMIUM_BUNDLE_ID];
+      const configs: Record<number, number>[] = Array.isArray(raw) ? raw : [];
+      const groups = new Map<string, { config: Record<number, number>; count: number }>();
+      configs.slice(0, quantity).forEach(cfg => {
+        const k = configKey(cfg);
+        const existing = groups.get(k);
+        if (existing) existing.count++;
+        else groups.set(k, { config: cfg, count: 1 });
+      });
+      return Array.from(groups.values()).map(({ config, count }): DisplayItem => ({
+        ...base, quantity: count, isBundleBox: true, boxConfig: config,
+      }));
+    }
+
+    return [{ ...base, quantity, isBundleBox: false, boxConfig: null }];
   });
 
   // Rule: "Free Chocolate Chunk Cookie" requires another paid item to checkout.
@@ -47,6 +126,12 @@ export default function CartSidePanel({
     redeemedItemIds?.includes(CHOCO_CHUNK_REDEEM_ID) &&
     itemsTotal === 0 &&
     totalItems > 0;
+
+  const trashIcon = (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+    </svg>
+  );
 
   return (
     <>
@@ -64,7 +149,7 @@ export default function CartSidePanel({
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={onClose}
-      ></div>
+      />
 
       {/* Side Panel */}
       <div
@@ -73,7 +158,7 @@ export default function CartSidePanel({
         }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 shrink-0">
           <h2 className="text-2xl font-bold text-black">Your Cart ({totalItems})</h2>
           <button
             onClick={onClose}
@@ -87,70 +172,109 @@ export default function CartSidePanel({
 
         {/* Cart Items */}
         {totalItems > 0 ? (
-          <div className="flex-grow overflow-y-auto p-6 space-y-4">
-            {cartItems.map((item) => (
-              <div key={item.id} className={`flex items-center gap-4 p-2 -m-2 rounded-lg ${item.wasJustAdded ? 'animate-highlight' : ''}`}>
-                <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-gray-100">
-                  <Image src={item.src} alt={item.name} fill className="object-cover" />
-                </div>
-                <div className="flex-grow">
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="font-bold text-black leading-tight">{item.name}</p>
-                    {redeemedItemIds?.includes(item.id) && (
-                      <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-green-100 text-green-700">
-                        Redeemed
-                      </span>
+          <div className="grow overflow-y-auto p-6 space-y-4">
+            {displayItems.map((item) => {
+              const key = item.isBundleBox
+                ? `${item.id}_${item.boxConfig ? configKey(item.boxConfig) : 'empty'}`
+                : `${item.id}`;
+              const isRedeemed = redeemedItemIds?.includes(item.id);
+
+              return (
+                <div key={key} className={`flex items-start gap-4 p-2 -m-2 rounded-lg ${item.wasJustAdded ? 'animate-highlight' : ''}`}>
+                  <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+                    <Image src={item.src} alt={item.name} fill className="object-cover" />
+                  </div>
+
+                  <div className="grow min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <p className="font-bold text-black leading-tight">{item.name}</p>
+                      {isRedeemed && (
+                        <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-green-100 text-green-700">
+                          Redeemed
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-500">₱{item.price.toFixed(2)}</p>
+
+                    {/* Bundle box: flavor list */}
+                    {item.isBundleBox && item.boxConfig && (
+                      <div className="mt-1.5 space-y-0.5">
+                        {Object.entries(item.boxConfig).map(([fid, count]) => {
+                          const name = MENU_ITEMS.find(m => m.id === Number(fid))?.name
+                            .replace(" Cookie", "") ?? "Unknown";
+                          return (
+                            <div key={fid} className="text-[10px] text-gray-400">
+                              {count}× {name}
+                            </div>
+                          );
+                        })}
+                        <Link
+                          href="/order/premium-assorted-bundle"
+                          onClick={onClose}
+                          className="text-[9px] font-bold text-[#3a9dc0] hover:underline mt-1 block"
+                        >
+                          Add more or edit on the bundle page →
+                        </Link>
+                      </div>
                     )}
                   </div>
-                  <p className="text-sm text-gray-500">₱{item.price.toFixed(2)}</p>                  
+
+                  {/* Controls */}
+                  {item.isBundleBox ? (
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-sm font-bold text-black bg-gray-100 px-3 py-1 rounded-full">×{item.quantity}</span>
+                      <button
+                        onClick={() => item.boxConfig && removeBundleConfig(item.boxConfig)}
+                        className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                        title="Remove one box"
+                      >
+                        {trashIcon}
+                      </button>
+                    </div>
+                  ) : isRedeemed ? (
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-sm font-bold text-black bg-gray-100 px-3 py-1 rounded-full">x{item.quantity}</span>
+                      <button
+                        onClick={() => updateQuantity(item.id, -item.quantity)}
+                        className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                        title="Remove Item"
+                      >
+                        {trashIcon}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center bg-gray-100 rounded-full p-1 shrink-0">
+                      <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-sm text-gray-600 hover:bg-black hover:text-white transition-colors">-</button>
+                      <span className="w-8 text-center font-bold text-sm text-black">{item.quantity}</span>
+                      <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 flex items-center justify-center bg-black text-white rounded-full shadow-sm hover:bg-[#a7dff4] hover:text-black transition-colors">+</button>
+                    </div>
+                  )}
                 </div>
-                
-                {/* Quantity Controls */}
-                {redeemedItemIds?.includes(item.id) ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-black bg-gray-100 px-3 py-1 rounded-full">x{item.quantity}</span>
-                    <button 
-                      onClick={() => updateQuantity(item.id, -item.quantity)}
-                      className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                      title="Remove Item"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                      </svg>
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center bg-gray-100 rounded-full p-1">
-                    <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-sm text-gray-600 hover:bg-black hover:text-white transition-colors">-</button>
-                    <span className="w-8 text-center font-bold text-sm text-black">{item.quantity}</span>
-                    <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 flex items-center justify-center bg-black text-white rounded-full shadow-sm hover:bg-[#a7dff4] hover:text-black transition-colors">+</button>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
-          <div className="flex-grow flex flex-col items-center justify-center text-center p-6 text-gray-400">
-              <BsCart size={80} className="mb-4 opacity-50" />
-              <h3 className="text-xl font-bold text-black mt-4">Your cart is empty</h3>
-              <p className="text-gray-500 mt-2">Looks like you haven't added any cookies yet.</p>
+          <div className="grow flex flex-col items-center justify-center text-center p-6 text-gray-400">
+            <BsCart size={80} className="mb-4 opacity-50" />
+            <h3 className="text-xl font-bold text-black mt-4">Your cart is empty</h3>
+            <p className="text-gray-500 mt-2">Looks like you haven&apos;t added any cookies yet.</p>
           </div>
         )}
 
         {/* Footer */}
         {totalItems > 0 && (
-          <div className="p-6 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+          <div className="p-6 border-t border-gray-200 bg-gray-50 shrink-0">
             <div className="flex justify-between items-center mb-4">
               <span className="text-lg font-bold text-black">Subtotal</span>
               <span className="text-xl font-black text-black">₱{itemsTotal.toFixed(2)}</span>
             </div>
             {isChocoChunkOnlyRedemption && (
               <div className="bg-yellow-50 text-yellow-800 text-xs font-bold p-3 rounded-lg text-center border border-yellow-200 mb-3">
-                The "Free Chocolate Chunk Cookie" reward requires at least one other purchased item to checkout.
+                The &quot;Free Chocolate Chunk Cookie&quot; reward requires at least one other purchased item to checkout.
               </div>
             )}
-            <button 
-              onClick={onProceedToCheckout} 
+            <button
+              onClick={onProceedToCheckout}
               disabled={isChocoChunkOnlyRedemption}
               className="w-full bg-black text-white font-bold py-4 rounded-full hover:bg-[#a7dff4] hover:text-black hover:scale-[1.02] active:scale-95 transition-all duration-300 shadow-lg text-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >

@@ -266,6 +266,15 @@ export default function CheckoutPage() {
                 });
             }
         });
+
+        // Attach bundle configs for Premium Assorted Bundle so admin can see flavor lineups
+        const premiumEntry = orderItems.find(i => i.id === 9);
+        if (premiumEntry) {
+            try {
+                const all = JSON.parse(localStorage.getItem("crumella_bundle_configs") || "{}");
+                if (Array.isArray(all[9])) premiumEntry.bundleConfigs = all[9];
+            } catch {}
+        }
     }
 
     const orderData = {

@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export default function Navbar() {
+export default function Navbar({ rightSlot }: { rightSlot?: React.ReactNode } = {}) {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
@@ -77,13 +77,15 @@ export default function Navbar() {
         </div>
 
         {/* Order Button (Right) */}
-        <Link 
-          href="/order" 
-          className={`hidden md:block px-5 py-2 md:px-8 md:py-3 rounded-full font-bold text-sm md:text-lg shadow-md hover:scale-105 transition-all duration-300 cursor-pointer z-50 ${
-            isScrolled || isOpen ? 'bg-black text-white hover:bg-gray-900 hover:shadow-xl' : 'bg-white/10 text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.5)] border-2 border-white backdrop-blur-sm hover:bg-white hover:text-black'
-          }`}>
-          Order Now
-        </Link>
+        {rightSlot ?? (
+          <Link
+            href="/order"
+            className={`hidden md:block px-5 py-2 md:px-8 md:py-3 rounded-full font-bold text-sm md:text-lg shadow-md hover:scale-105 transition-all duration-300 cursor-pointer z-50 ${
+              isScrolled || isOpen ? 'bg-black text-white hover:bg-gray-900 hover:shadow-xl' : 'bg-white/10 text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.5)] border-2 border-white backdrop-blur-sm hover:bg-white hover:text-black'
+            }`}>
+            Order Now
+          </Link>
+        )}
 
       </div>
       </div>

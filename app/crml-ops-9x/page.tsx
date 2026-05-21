@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../components/supabase";
+import { MENU_ITEMS } from "../../components/Menu";
 import Link from "next/link";
 
 const STORE_LOCATION = { lat: 10.7819, lng: 122.5438 }; // GT Town Center Pavia
@@ -16,6 +17,16 @@ export default function AdminPage() {
   const [password, setPassword] = useState("");
   const [orderFilter, setOrderFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState("");
+  const [expandedBundles, setExpandedBundles] = useState<Set<string>>(new Set());
+
+  const toggleBundle = (key: string) => {
+    setExpandedBundles(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   useEffect(() => {
     const checkSession = async () => {
@@ -622,10 +633,42 @@ export default function AdminPage() {
                       </div>
                     </td>
                     <td className="p-5 min-w-[200px]">
-                      <ul className="list-disc list-inside text-gray-700">
-                        {order.items.map((item: any, idx: number) => (
-                          <li key={idx}><span className="font-bold">{item.quantity}x</span> {item.name}</li>
-                        ))}
+                      <ul className="space-y-1 text-gray-700">
+                        {order.items.map((item: any, idx: number) => {
+                          const key = `${order.id}-${idx}`;
+                          const hasBundles = Array.isArray(item.bundleConfigs) && item.bundleConfigs.length > 0;
+                          const isOpen = expandedBundles.has(key);
+                          return (
+                            <li key={idx} className="text-sm">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold">{item.quantity}x</span> {item.name}
+                                {hasBundles && (
+                                  <button
+                                    onClick={() => toggleBundle(key)}
+                                    className="text-[10px] font-bold text-blue-600 hover:text-blue-800 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 transition-colors"
+                                  >
+                                    {isOpen ? '▼ Hide' : '▶ Lineup'}
+                                  </button>
+                                )}
+                              </div>
+                              {hasBundles && isOpen && (
+                                <div className="mt-1.5 ml-4 space-y-1.5">
+                                  {item.bundleConfigs.map((config: Record<string, number>, boxIdx: number) => (
+                                    <div key={boxIdx} className="text-[10px] bg-blue-50 px-2 py-1.5 rounded-lg border border-blue-100">
+                                      <div className="font-black text-blue-700 mb-0.5 uppercase tracking-wide">Box {boxIdx + 1}</div>
+                                      {Object.entries(config).map(([fid, count]) => {
+                                        const flavor = MENU_ITEMS.find(m => m.id === Number(fid));
+                                        return (
+                                          <div key={fid} className="text-gray-600">{count}× {flavor?.name.replace(' Cookie', '') ?? `Flavor #${fid}`}</div>
+                                        );
+                                      })}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </li>
+                          );
+                        })}
                       </ul>
                       {order.customer.notes && (
                         <div className="text-xs text-gray-700 mt-2 italic bg-yellow-50 p-2 rounded-lg border border-yellow-100">Note: {order.customer.notes}</div>
@@ -824,12 +867,42 @@ export default function AdminPage() {
 
               <div>
                 <div className="text-xs font-bold text-gray-600 uppercase mb-2">Items</div>
-                <ul className="space-y-1">
-                  {order.items.map((item: any, idx: number) => (
-                    <li key={idx} className="text-sm text-gray-800">
-                      <span className="font-bold">{item.quantity}x</span> {item.name}
-                    </li>
-                  ))}
+                <ul className="space-y-1.5">
+                  {order.items.map((item: any, idx: number) => {
+                    const key = `m-${order.id}-${idx}`;
+                    const hasBundles = Array.isArray(item.bundleConfigs) && item.bundleConfigs.length > 0;
+                    const isOpen = expandedBundles.has(key);
+                    return (
+                      <li key={idx} className="text-sm text-gray-800">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold">{item.quantity}x</span> {item.name}
+                          {hasBundles && (
+                            <button
+                              onClick={() => toggleBundle(key)}
+                              className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200"
+                            >
+                              {isOpen ? '▼ Hide' : '▶ Lineup'}
+                            </button>
+                          )}
+                        </div>
+                        {hasBundles && isOpen && (
+                          <div className="mt-1.5 ml-4 space-y-1.5">
+                            {item.bundleConfigs.map((config: Record<string, number>, boxIdx: number) => (
+                              <div key={boxIdx} className="text-[10px] bg-blue-50 px-2 py-1.5 rounded-lg border border-blue-100">
+                                <div className="font-black text-blue-700 mb-0.5 uppercase tracking-wide">Box {boxIdx + 1}</div>
+                                {Object.entries(config).map(([fid, count]) => {
+                                  const flavor = MENU_ITEMS.find(m => m.id === Number(fid));
+                                  return (
+                                    <div key={fid} className="text-gray-600">{count}× {flavor?.name.replace(' Cookie', '') ?? `Flavor #${fid}`}</div>
+                                  );
+                                })}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
                 {order.customer.notes && (
                    <div className="mt-2 text-xs bg-yellow-50 text-yellow-800 p-2 rounded border border-yellow-100 italic">

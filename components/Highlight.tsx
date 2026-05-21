@@ -7,8 +7,9 @@ export default function Highlight() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [currentCreatorIndex, setCurrentCreatorIndex] = useState(0);
   const images = [
-    "/HS/HS3.png", // ENTER YOUR PHOTO SRC HERE
-    "/HS/HS4.png" // ENTER YOUR PHOTO SRC HERE
+    "/HS/HS13.JPG",
+    "/HS/HS14.JPG",
+    "/HS/HS15.JPG"
   ];
   
   const creatorImages = [
@@ -132,7 +133,7 @@ export default function Highlight() {
           <div className="relative z-10 flex h-full flex-col justify-between">
             <div>
               <h2 className="text-3xl font-black text-[#a6dff6] transition-transform duration-300 group-hover:scale-105 origin-left">
-                New Cookie Flavors!
+                New Cookie Flavor!
               </h2>
               <p className="mt-2 text-lg font-medium text-gray-300">
                 Freshly baked, limited edition drops.

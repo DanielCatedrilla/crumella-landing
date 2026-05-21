@@ -1,18 +1,22 @@
 "use client";
-import React, { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, startTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ORDER_ITEMS } from "../../components/Menu";
-import { BsCart, BsArrowLeft } from "react-icons/bs";
+
+const toSlug = (name: string) =>
+  name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+import { BsCart } from "react-icons/bs";
 import { useRouter, useSearchParams } from "next/navigation";
 import CartSidePanel from "../../components/CartSidePanel";
+import Navbar from "../../components/Navbar";
 
 function OrderContent() {
   // State to track quantities for each cookie (by ID)
   const [cart, setCart] = useState<{ [key: number]: number }>({});
   const [isCartLoaded, setIsCartLoaded] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [redeemedItems, setRedeemedItems] = useState<any[]>([]);
+  const [redeemedItems, setRedeemedItems] = useState<{ redeemed_item_id: number }[]>([]);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -33,7 +37,7 @@ function OrderContent() {
               validatedCart[Number(id)] = parsed[id];
             }
           }
-          setCart(validatedCart);
+          startTransition(() => setCart(validatedCart));
         }
       } catch (error) {
         console.error("Error loading saved cart:", error);
@@ -45,19 +49,34 @@ function OrderContent() {
     if (pendingRedemption) {
       try {
         const parsed = JSON.parse(pendingRedemption);
-        if (Array.isArray(parsed)) setRedeemedItems(parsed);
-        else if (parsed.redeemed_item_id) setRedeemedItems([parsed]);
-      } catch (e) {}
+        if (Array.isArray(parsed)) startTransition(() => setRedeemedItems(parsed));
+        else if (parsed.redeemed_item_id) startTransition(() => setRedeemedItems([parsed]));
+      } catch {}
     }
 
-    setIsCartLoaded(true);
+    startTransition(() => setIsCartLoaded(true));
   }, []);
-
 
   // Save cart items whenever they change
   useEffect(() => {
     if (isCartLoaded) {
       localStorage.setItem("chewy_cart_items", JSON.stringify(cart));
+    }
+  }, [cart, isCartLoaded]);
+
+  // If bundle is not in the cart, clear its stale configs so the detail page shows correctly.
+  useEffect(() => {
+    if (isCartLoaded) {
+      const BUNDLE_ID = 9;
+      if (!cart[BUNDLE_ID]) {
+        try {
+          const all = JSON.parse(localStorage.getItem("crumella_bundle_configs") || "{}");
+          if (all[BUNDLE_ID]) {
+            delete all[BUNDLE_ID];
+            localStorage.setItem("crumella_bundle_configs", JSON.stringify(all));
+          }
+        } catch {}
+      }
     }
   }, [cart, isCartLoaded]);
 
@@ -75,16 +94,25 @@ function OrderContent() {
   // Open cart if redirected from redeeming points
   useEffect(() => {
     if (searchParams.get('openCart') === 'true') {
-      setIsCartOpen(true);
-      // Clean up the URL so the cart doesn't re-open on refresh
+      startTransition(() => setIsCartOpen(true));
       router.replace('/order', { scroll: false });
     }
   }, [searchParams, router]);
 
   // Filter out items that should be hidden from the main menu (like exclusive redemption items)
   const visibleItems = ORDER_ITEMS.filter(item => !["Free Exclusive Merch", "Free Chocolate Chunk Cookie", "Free Crumella Minis", "Free Classic Assorted Bundle"].includes(item.name));
-  // Get unique categories
-  const categories = Array.from(new Set(visibleItems.map(item => item.category || "Single Flavors")));
+  // Get unique categories in a fixed display order
+  const CATEGORY_ORDER = [
+    "Single Flavors",
+    "Box of 4 - Single Flavor Bundles",
+    "Box of 4 - Assorted Bundles",
+    "Box of 12 - Crumella Minis",
+  ];
+  const rawCategories = Array.from(new Set(visibleItems.map(item => item.category || "Single Flavors")));
+  const categories = [
+    ...CATEGORY_ORDER.filter(c => rawCategories.includes(c)),
+    ...rawCategories.filter(c => !CATEGORY_ORDER.includes(c)),
+  ];
 
   // Helper to update quantities
   const updateQuantity = (id: number, delta: number) => {
@@ -125,52 +153,32 @@ function OrderContent() {
     }
   };
 
-  // Clear saved data when exiting to home
-  const handleExit = () => {
-    window.dispatchEvent(new Event('clear-order-persistence'));
-  };
-
   return (
     <>
-    <style>{`
-      @keyframes bounce-cart {
-        0%, 100% { 
-          transform: translateY(0); 
-          animation-timing-function: cubic-bezier(0.8, 0, 1, 1); 
-        }
-        50% { 
-          transform: translateY(-25%); 
-          animation-timing-function: cubic-bezier(0, 0, 0.2, 1); 
-        }
-      }
-      .animate-bounce-cart {
-        animation: bounce-cart 1s infinite;
-      }
-    `}</style>
-    <main className="min-h-screen bg-[#fffdf7] py-12 px-4 md:px-8 relative overflow-hidden">
+    <Navbar rightSlot={
+      <button
+        onClick={() => setIsCartOpen(true)}
+        className="relative p-2 text-black hover:text-white transition-colors z-50"
+      >
+        <BsCart size={22} />
+        {totalItems > 0 && (
+          <span className="absolute top-0 right-0 bg-black text-white rounded-full w-5 h-5 text-xs flex items-center justify-center font-bold">
+            {totalItems}
+          </span>
+        )}
+      </button>
+    } />
+
+    <main className="min-h-screen bg-[#fffdf7] pt-24 pb-12 px-4 md:px-8 relative overflow-hidden">
       {/* Decorative background elements */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-[#a7dff4] rounded-full mix-blend-multiply filter blur-[128px] opacity-20 -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-pink-200 rounded-full mix-blend-multiply filter blur-[128px] opacity-20 translate-x-1/2 translate-y-1/2 pointer-events-none"></div>
 
-      <div className="max-w-7xl mx-auto relative z-10 ">
-        {/* Header */}
-        <div className="relative flex items-center justify-center mb-12">
-          <div className="absolute left-0">
-            <Link href="/" onClick={handleExit} className="text-sm font-bold uppercase tracking-widest text-black hover:text-[#a7dff4] transition-colors">
-              <span className="md:hidden"><BsArrowLeft size={24} /></span>
-              <span className="hidden md:inline">← Back to Home</span>
-            </Link>
-          </div>
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight text-center text-black mx-auto">
-            Your Order<span className="text-[#a7dff4]">.</span>
-          </h1>
-          <div className="absolute right-0">
-            <button onClick={() => setIsCartOpen(true)} className={`relative text-black hover:text-[#a7dff4] transition-colors p-2 ${totalItems > 0 ? 'animate-bounce-cart' : ''}`}>
-                <BsCart size={30} />
-                {totalItems > 0 && <span className="absolute top-0 right-0 bg-[#a7dff4] text-black rounded-full w-5 h-5 text-xs flex items-center justify-center font-bold">{totalItems}</span>}
-            </button>
-          </div>
-        </div>
+      <div className="max-w-7xl mx-auto relative z-10">
+        {/* Page title */}
+        <h1 className="text-4xl md:text-5xl font-black tracking-tight text-black mb-10">
+          Your Order<span className="text-[#a7dff4]">.</span>
+        </h1>
 
         <div className="max-w-[90rem] mx-auto">
           
@@ -184,47 +192,35 @@ function OrderContent() {
                 const qty = cart[item.id] || 0;
                 const itemPrice = item.price || 4.00;
                 return (
-                  <div key={item.id} id={`cookie-flavor-${item.id}`} className={`bg-white rounded-3xl border transition-all duration-300 overflow-hidden flex flex-col ${qty > 0 ? 'border-black shadow-lg ring-1 ring-black' : 'border-gray-100 shadow-sm'}`}>
-                    <div className="relative h-48 md:h-64 w-full">
-                      <Image 
-                        src={item.src} 
-                        alt={item.name} 
-                        fill 
-                        className="object-cover"
+                  <Link key={item.id} href={`/order/${toSlug(item.name)}`} id={`cookie-flavor-${item.id}`} className={`bg-white rounded-3xl border transition-all duration-300 overflow-hidden flex flex-col cursor-pointer group ${qty > 0 ? 'border-black shadow-lg ring-1 ring-black' : 'border-gray-100 shadow-sm hover:shadow-md'}`}>
+                    <div className="relative h-48 md:h-64 w-full overflow-hidden">
+                      <Image
+                        src={item.src}
+                        alt={item.name}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                       {item.badge && (
                         <span className="absolute top-4 left-4 bg-yellow-400 text-black text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-md z-10">
                           {item.badge}
                         </span>
                       )}
+                      {qty > 0 && (
+                        <span className="absolute top-4 right-4 bg-black text-white text-[10px] font-bold px-2.5 py-1 rounded-full z-10">
+                          {qty} in cart
+                        </span>
+                      )}
                     </div>
-                    <div className="p-6 flex flex-col flex-grow justify-between">
-                    <div className="flex justify-between items-end">
+                    <div className="p-5 flex items-end justify-between">
                       <div>
-                        <h3 className="font-bold text-lg leading-tight mb-1 text-black">{item.name}</h3>
-                        <p className="text-black text-sm">₱{itemPrice.toFixed(2)}</p>
+                        <h3 className="font-bold text-base leading-tight mb-0.5 text-black">{item.name}</h3>
+                        <p className="text-gray-500 text-sm">₱{itemPrice.toFixed(2)}</p>
                       </div>
-                      
-                      {/* Quantity Controls */}
-                      <div className="flex items-center bg-gray-100 rounded-full p-1">
-                        <button 
-                          onClick={() => updateQuantity(item.id, -1)}
-                          className="w-10 h-10 flex items-center justify-center bg-white rounded-full shadow-sm text-gray-600 hover:bg-black hover:text-white transition-colors disabled:opacity-50"
-                          disabled={qty === 0}
-                        >
-                          -
-                        </button>
-                        <span className="w-8 text-center font-bold text-sm text-black">{qty}</span>
-                        <button 
-                          onClick={() => updateQuantity(item.id, 1)}
-                          className="w-10 h-10 flex items-center justify-center bg-black text-white rounded-full shadow-sm hover:bg-[#a7dff4] hover:text-black transition-colors"
-                        >
-                          +
-                        </button>
-                      </div>
+                      <span className="shrink-0 bg-black text-white text-xs font-black px-5 py-2.5 rounded-full group-hover:bg-[#a7dff4] group-hover:text-black transition-all duration-200 uppercase tracking-wider">
+                        Order
+                      </span>
                     </div>
-                    </div>
-                  </div>
+                  </Link>
                 );
               })}
                 </div>
