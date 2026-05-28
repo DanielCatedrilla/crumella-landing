@@ -6,6 +6,20 @@ const nextConfig: NextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2560, 3840],
     qualities: [75, 85, 90],
   },
+  async redirects() {
+    return [
+      {
+        source: '/admin/card/:id',
+        destination: '/crml-ops-9x/card/:id',
+        permanent: true,
+      },
+      {
+        source: '/admin',
+        destination: '/crml-ops-9x',
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {
