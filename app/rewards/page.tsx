@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import {
   motion,
   useScroll,
@@ -14,6 +14,7 @@ import {
 
 // ─── brand ease (expo out) ────────────────────────────────────────────────────
 const E = [0.22, 1, 0.36, 1] as const;
+
 
 // ─── data ────────────────────────────────────────────────────────────────────
 const steps = [
@@ -27,7 +28,6 @@ const benefits = [
   { icon: "🍪", title: "Free Cookies",      description: "Redeem points for free Classic or Specialty cookies.",          detail: "Available from 75 pts. Choose any classic or specialty flavor.",  featured: true },
   { icon: "🎁", title: "Free Bundles",      description: "Unlock full assorted bundles with enough points.",              detail: "250 pts unlocks a Classic Assorted Bundle. Delivery fee applies.", featured: false },
   { icon: "👕", title: "Exclusive Merch",   description: "Get your hands on limited Crumella merch.",                    detail: "400 pts redeemable for limited-run Crumella merchandise.",         featured: false },
-  { icon: "🎂", title: "Birthday Bonus",    description: "Enjoy a special surprise reward on your birthday month.",       detail: "Bonus points drop automatically during your birthday month.",     featured: false },
   { icon: "⚡", title: "Early Access",      description: "Be the first to know about new flavors and limited drops.",    detail: "24-hour early access to new releases before the public.",        featured: false },
   { icon: "✨", title: "Member-Only Perks", description: "Access deals and promotions exclusive to Rewards members.",    detail: "Flash offers, exclusive codes, and member appreciation deals.",   featured: false },
 ];
@@ -70,7 +70,6 @@ function Divider() {
 function BenefitCard({ b, i, className = "" }: { b: typeof benefits[0]; i: number; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-50px" });
-  const [hovered, setHovered] = useState(false);
   const tilt = i % 2 === 0 ? 2.5 : -2.5;
 
   return (
@@ -79,20 +78,12 @@ function BenefitCard({ b, i, className = "" }: { b: typeof benefits[0]; i: numbe
       initial={{ opacity: 0, rotate: tilt, y: 35 }}
       animate={inView ? { opacity: 1, rotate: 0, y: 0 } : {}}
       transition={{ duration: 0.85, ease: E, delay: i * 0.07 }}
-      whileHover={{ y: -6 }}
-      onHoverStart={() => setHovered(true)}
-      onHoverEnd={() => setHovered(false)}
       className={`relative overflow-hidden rounded-[2rem] border border-white/60 shadow-lg cursor-default bg-white/70 backdrop-blur-xl ${b.featured ? "p-9" : "p-7"} ${className}`}
     >
-      {/* Primary content */}
       <div className="relative z-10">
-        <motion.span
-          animate={hovered ? { scale: 1.2, rotate: [0, -12, 12, 0] } : { scale: 1 }}
-          transition={{ duration: 0.45 }}
-          className={`block mb-4 ${b.featured ? "text-5xl" : "text-3xl"}`}
-        >
+        <span className={`block mb-4 ${b.featured ? "text-5xl" : "text-3xl"}`}>
           {b.icon}
-        </motion.span>
+        </span>
         <h3 className={`font-black text-black tracking-tight mb-2 ${b.featured ? "text-2xl" : "text-base"}`}>
           {b.title}
         </h3>
@@ -103,16 +94,6 @@ function BenefitCard({ b, i, className = "" }: { b: typeof benefits[0]; i: numbe
           </span>
         )}
       </div>
-
-      {/* Clip-path hover reveal */}
-      <motion.div
-        initial={{ clipPath: "inset(0 100% 0 0)" }}
-        animate={{ clipPath: hovered ? "inset(0 0% 0 0)" : "inset(0 100% 0 0)" }}
-        transition={{ duration: 0.42, ease: E }}
-        className="absolute inset-0 bg-[#a6dff6] flex items-end p-7 z-20 rounded-4xl"
-      >
-        <p className="text-black text-sm leading-relaxed font-medium">{b.detail}</p>
-      </motion.div>
     </motion.div>
   );
 }
@@ -145,14 +126,14 @@ function EarnSection() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col items-center justify-center text-center px-6 py-28">
+      <div className="relative z-10 flex flex-col items-center justify-center text-center px-6 py-16 md:py-28">
 
         {/* Label */}
         <motion.span
           initial={{ opacity: 0, y: 16 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6, ease: E }}
-          className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.4em] text-black/60 mb-10"
+          className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.4em] text-black/60 mb-6 md:mb-10"
         >
           <span className="w-6 h-px bg-black/30" />
           Earning Points
@@ -161,7 +142,7 @@ function EarnSection() {
 
         {/* Icon animation: bag → star */}
         <motion.div
-          className="mb-10 relative flex items-center justify-center"
+          className="mb-6 md:mb-10 relative flex items-center justify-center"
           style={{ height: 80 }}
         >
           {/* Bag */}
@@ -200,22 +181,22 @@ function EarnSection() {
         </motion.div>
 
         {/* Main statement */}
-        <div className="overflow-hidden mb-4">
+        <div className="overflow-hidden mb-2 md:mb-4">
           <motion.h2
             initial={{ y: 70, opacity: 0 }}
             animate={inView ? { y: 0, opacity: 1 } : {}}
             transition={{ duration: 0.85, ease: E, delay: 0.25 }}
-            className="text-5xl md:text-7xl lg:text-8xl font-black text-black tracking-tight leading-[0.9]"
+            className="text-4xl md:text-7xl lg:text-8xl font-black text-black tracking-tight leading-[0.9]"
           >
             Every order.
           </motion.h2>
         </div>
-        <div className="overflow-hidden mb-10">
+        <div className="overflow-hidden mb-8 md:mb-10">
           <motion.h2
             initial={{ y: 70, opacity: 0 }}
             animate={inView ? { y: 0, opacity: 1 } : {}}
             transition={{ duration: 0.85, ease: E, delay: 0.38 }}
-            className="text-5xl md:text-7xl lg:text-8xl font-black text-black/50 tracking-tight leading-[0.9]"
+            className="text-4xl md:text-7xl lg:text-8xl font-black text-black/50 tracking-tight leading-[0.9]"
           >
             Every point.
           </motion.h2>
@@ -226,7 +207,7 @@ function EarnSection() {
           initial={{ opacity: 0, y: 30, scale: 0.95 }}
           animate={inView ? { opacity: 1, y: 0, scale: 1 } : {}}
           transition={{ duration: 0.8, ease: E, delay: 0.6 }}
-          className="bg-white/90 backdrop-blur-xl rounded-3xl px-10 py-8 shadow-2xl border border-white/60 flex flex-col sm:flex-row items-center gap-6 sm:gap-10"
+          className="bg-white/90 backdrop-blur-xl rounded-3xl px-8 py-6 md:px-10 md:py-8 shadow-2xl border border-white/60 flex flex-row items-center gap-8 md:gap-10"
         >
           {/* Spend */}
           <div className="text-center">
@@ -234,7 +215,7 @@ function EarnSection() {
             <p className="text-4xl md:text-5xl font-black text-black tracking-tight">₱20</p>
           </div>
 
-          {/* Arrow */}
+          {/* Arrow — points right on desktop, down on mobile */}
           <motion.div
             animate={{ x: [0, 6, 0] }}
             transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
@@ -329,34 +310,74 @@ export default function RewardsPage() {
         ════════════════════════════════════════════════════ */}
         <section
           ref={heroRef}
-          className="relative z-10 h-screen w-full overflow-hidden"
+          className="relative z-10 w-full overflow-hidden"
         >
-          {/* Photo */}
-          <Image
-            src="/DS/DS23.png"
-            alt="Crumella Rewards"
-            fill
-            className="object-cover"
-            quality={90}
-            priority
-          />
+          {/* Desktop: full-screen photo */}
+          <div className="hidden md:block relative h-screen">
+            <Image
+              src="/DS/DS23.png"
+              alt="Crumella Rewards"
+              fill
+              className="object-cover"
+              quality={90}
+              priority
+            />
+            <div className="absolute bottom-10 left-1/2 -translate-x-1/2">
+              <button
+                onClick={() => {
+                  document.getElementById("rewards-content")?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="group relative overflow-hidden bg-white/80 backdrop-blur-md border border-white/60 text-black font-black text-lg px-10 py-5 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.1)] hover:shadow-[0_20px_50px_rgba(166,223,246,0.8)] transition-all duration-500 hover:-translate-y-2 hover:scale-105 active:scale-95 cursor-pointer"
+              >
+                <span className="relative z-10 flex items-center gap-3">
+                  Explore Rewards
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5 transition-transform duration-300 group-hover:translate-y-1">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                  </svg>
+                </span>
+                <div className="absolute inset-0 bg-linear-to-r from-transparent via-[#a6dff6]/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+              </button>
+            </div>
+          </div>
 
-          {/* Explore Rewards button */}
-          <div className="absolute bottom-10 left-1/2 -translate-x-1/2">
-            <button
+          {/* Mobile: text-only hero */}
+          <div className="md:hidden flex flex-col justify-center px-6 pt-32 pb-16" style={{ background: "linear-gradient(160deg, #e8f7fd 0%, #fffdf7 60%)" }}>
+            <motion.span
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: E }}
+              className="text-[10px] font-bold uppercase tracking-[0.35em] text-[#5bb8e8] mb-4 block"
+            >
+              Crumella Rewards
+            </motion.span>
+            <motion.h1
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.75, ease: E, delay: 0.1 }}
+              className="text-5xl font-black text-black tracking-tight leading-[1.05] mb-4"
+            >
+              Cookies taste<br />better with<br />
+              <span className="text-[#a6dff6]">rewards.</span>
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, ease: E, delay: 0.2 }}
+              className="text-sm text-gray-500 leading-relaxed mb-8 max-w-xs"
+            >
+              Earn points with every order. Redeem for free cookies, bundles, merch &amp; more.
+            </motion.p>
+            <motion.button
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.65, ease: E, delay: 0.3 }}
               onClick={() => {
                 document.getElementById("rewards-content")?.scrollIntoView({ behavior: "smooth" });
               }}
-              className="group relative overflow-hidden bg-white/80 backdrop-blur-md border border-white/60 text-black font-black text-lg px-10 py-5 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.1)] hover:shadow-[0_20px_50px_rgba(166,223,246,0.8)] transition-all duration-500 hover:-translate-y-2 hover:scale-105 active:scale-95 cursor-pointer"
+              className="self-start rounded-full bg-black text-white font-bold px-7 py-3 text-sm"
             >
-              <span className="relative z-10 flex items-center gap-3">
-                Explore Rewards
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5 transition-transform duration-300 group-hover:translate-y-1">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                </svg>
-              </span>
-              <div className="absolute inset-0 bg-linear-to-r from-transparent via-[#a6dff6]/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
-            </button>
+              Explore Rewards ↓
+            </motion.button>
           </div>
         </section>
 
@@ -365,12 +386,12 @@ export default function RewardsPage() {
         {/* ════════════════════════════════════════════════════
             WHAT IS IT — luxury dark, full bleed
         ════════════════════════════════════════════════════ */}
-        <section id="rewards-content" className="relative z-10 w-full bg-[#a6dff6]/20 py-28 px-6 overflow-hidden">
+        <section id="rewards-content" className="relative z-10 w-full bg-[#a6dff6]/20 py-16 md:py-28 px-6 overflow-hidden">
           {/* Subtle glow */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[260px] bg-white/40 blur-[100px] pointer-events-none" />
           <div className="absolute bottom-0 right-0 w-[400px] h-[300px] bg-[#a6dff6]/20 blur-[120px] pointer-events-none" />
 
-          <div className="max-w-5xl mx-auto flex flex-col md:flex-row gap-16 items-center">
+          <div className="max-w-5xl mx-auto flex flex-col md:flex-row gap-8 md:gap-16 items-center">
             {/* Left — enters from left */}
             <motion.div
               className="flex-1"
@@ -380,10 +401,10 @@ export default function RewardsPage() {
               transition={{ duration: 0.95, ease: E }}
             >
               <span className="text-xs font-bold uppercase tracking-[0.35em] text-[#5bb8e8] mb-4 block">What is it?</span>
-              <h2 className="text-4xl md:text-5xl font-black text-black tracking-tight mb-6 leading-tight">
+              <h2 className="text-3xl md:text-5xl font-black text-black tracking-tight mb-4 md:mb-6 leading-tight">
                 A loyalty program built for cookie lovers.
               </h2>
-              <p className="text-gray-600 text-lg leading-relaxed">
+              <p className="text-gray-600 text-base md:text-lg leading-relaxed">
                 Crumella Rewards is our way of saying thank you. Every time you order, you earn points. Stack them up and redeem them for free goodies — from a single cookie to a full bundle or exclusive merch. It's that simple.
               </p>
             </motion.div>
@@ -396,23 +417,17 @@ export default function RewardsPage() {
               transition={{ duration: 0.95, ease: E, delay: 0.15 }}
               whileHover={{ rotateY: 9, rotateX: -5, scale: 1.04 }}
               style={{ perspective: 1000 }}
-              className="relative w-full md:w-72 shrink-0 aspect-[1.586/1] rounded-3xl bg-gradient-to-br from-[#a6dff6] via-[#ccecf9] to-[#9adcf7] shadow-2xl flex flex-col justify-between p-7 border border-white/20 overflow-hidden cursor-pointer"
+              className="relative hidden md:flex w-full md:w-72 shrink-0 aspect-[1.586/1] rounded-3xl bg-gradient-to-br from-[#a6dff6] via-[#ccecf9] to-[#9adcf7] shadow-2xl flex-col justify-between p-7 border border-white/20 overflow-hidden cursor-pointer"
             >
               <div>
                 <h3 className="font-black text-2xl tracking-tighter italic text-black">Crumella<span className="text-white">.</span></h3>
                 <p className="text-[9px] font-bold text-black/60 uppercase tracking-[0.2em] mt-1">Exclusive Rewards</p>
               </div>
-              <div>
-                <p className="font-mono text-base tracking-widest text-black/70 mb-2">000 000 000</p>
-                <div className="flex justify-between items-end">
-                  <div>
-                    <p className="text-[8px] text-black/50 font-bold uppercase tracking-widest mb-0.5">Card Holder</p>
-                    <p className="font-bold text-xs uppercase text-black">Your Name</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[8px] text-black/50 font-bold uppercase tracking-widest mb-0.5">Expires</p>
-                    <p className="font-mono text-xs text-black">03/28</p>
-                  </div>
+              <div className="flex justify-between items-end">
+                <p className="font-mono text-base tracking-widest text-black/70">000 000 000</p>
+                <div className="text-right">
+                  <p className="text-[8px] text-black/50 font-bold uppercase tracking-widest mb-0.5">Expires</p>
+                  <p className="font-mono text-xs text-black">03/28</p>
                 </div>
               </div>
               <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/25 to-white/0 pointer-events-none" />
@@ -425,16 +440,16 @@ export default function RewardsPage() {
         {/* ════════════════════════════════════════════════════
             HOW IT WORKS — diagonal staircase
         ════════════════════════════════════════════════════ */}
-        <section className="relative z-10 w-full px-6 py-24">
+        <section className="relative z-10 w-full px-6 py-14 md:py-24">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.8, ease: E }}
-            className="max-w-5xl mx-auto text-center mb-16"
+            className="max-w-5xl mx-auto text-center mb-10 md:mb-16"
           >
             <span className="text-xs font-bold uppercase tracking-[0.35em] text-[#a6dff6] mb-3 block">How it works</span>
-            <h2 className="text-4xl md:text-5xl font-black text-black tracking-tight">Four simple steps.</h2>
+            <h2 className="text-3xl md:text-5xl font-black text-black tracking-tight">Four simple steps.</h2>
           </motion.div>
 
           <div ref={stepsRef} className="max-w-5xl mx-auto">
@@ -447,11 +462,8 @@ export default function RewardsPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-40px" }}
                   transition={{ duration: 0.75, ease: E, delay: i * 0.1 }}
-                  className="relative bg-white/70 backdrop-blur-xl rounded-[2rem] p-7 border border-white/60 shadow-lg overflow-hidden"
+                  className="relative bg-white/70 backdrop-blur-xl rounded-2xl p-5 border border-white/60 shadow-lg overflow-hidden"
                 >
-                  <span className="absolute -top-3 -right-1 text-[6rem] font-black text-[#a6dff6]/10 leading-none select-none pointer-events-none">
-                    {step.number}
-                  </span>
                   <span className="text-sm font-black text-[#a6dff6] tracking-widest block mb-2">{step.number}</span>
                   <h3 className="text-lg font-black text-black mb-2">{step.title}</h3>
                   <p className="text-sm text-gray-500 leading-relaxed">{step.description}</p>
@@ -494,10 +506,6 @@ export default function RewardsPage() {
                   transition={{ duration: 0.8, ease: E, delay: i * 0.14 }}
                   whileHover={{ y: -7, boxShadow: "0 24px 55px rgba(166,223,246,0.28)" }}
                 >
-                  {/* Giant watermark number */}
-                  <span className="absolute -top-4 -right-1 text-[6.5rem] font-black text-[#a6dff6]/10 leading-none select-none pointer-events-none">
-                    {step.number}
-                  </span>
                   <div className="relative z-10">
                     <span className="text-sm font-black text-[#a6dff6] tracking-widest block mb-3">{step.number}</span>
                     <h3 className="text-lg font-black text-black mb-2 tracking-tight">{step.title}</h3>
@@ -514,31 +522,30 @@ export default function RewardsPage() {
         {/* ════════════════════════════════════════════════════
             BENEFITS — asymmetric masonry, tilt-correct, clip reveal
         ════════════════════════════════════════════════════ */}
-        <section className="relative z-10 w-full px-6 py-24">
+        <section className="relative z-10 w-full px-6 py-14 md:py-24">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.8, ease: E }}
-            className="max-w-5xl mx-auto text-center mb-16"
+            className="max-w-5xl mx-auto text-center mb-10 md:mb-16"
           >
             <span className="text-xs font-bold uppercase tracking-[0.35em] text-[#a6dff6] mb-3 block">Perks</span>
-            <h2 className="text-4xl md:text-5xl font-black text-black tracking-tight">What you get.</h2>
+            <h2 className="text-3xl md:text-5xl font-black text-black tracking-tight">What you get.</h2>
           </motion.div>
 
           {/* Asymmetric grid:
-              Col 1 (featured, row-span-2) | Col 2 | Col 3
-              ─────────────────────────────┼───────┼──────
-              [Free Cookies — tall]        │Bundle │Merch
-                                           │Bday   │Early
-              ─────────────────────────────┴───────┴──────
+              Col 1 (featured, row-span-2) | Col 2       | Col 3
+              ─────────────────────────────┼─────────────┼──────
+              [Free Cookies — tall]        │ Free Bundles│ Merch
+                                           │ Early Access (col-span-2)
+              ─────────────────────────────┴─────────────┴──────
               [Member Perks — col-span-3, full width]        */}
           <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-5">
             <BenefitCard b={benefits[0]} i={0} className="md:row-span-2" />
             <BenefitCard b={benefits[1]} i={1} />
             <BenefitCard b={benefits[2]} i={2} />
-            <BenefitCard b={benefits[3]} i={3} />
-            <BenefitCard b={benefits[4]} i={4} />
+            <BenefitCard b={benefits[3]} i={3} className="md:col-span-2" />
             {/* Last card spans full width */}
             <motion.div
               className="md:col-span-3 relative overflow-hidden rounded-[2rem] border border-white/60 shadow-lg bg-white/70 backdrop-blur-xl p-7"
@@ -579,16 +586,16 @@ export default function RewardsPage() {
         {/* ════════════════════════════════════════════════════
             HOW TO REDEEM
         ════════════════════════════════════════════════════ */}
-        <section className="relative z-10 w-full px-6 py-24">
+        <section className="relative z-10 w-full px-6 py-14 md:py-24">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.8, ease: E }}
-            className="max-w-4xl mx-auto text-center mb-16"
+            className="max-w-4xl mx-auto text-center mb-10 md:mb-16"
           >
             <span className="text-xs font-bold uppercase tracking-[0.35em] text-[#a6dff6] mb-3 block">Redemption</span>
-            <h2 className="text-4xl md:text-5xl font-black text-black tracking-tight">How to redeem.</h2>
+            <h2 className="text-3xl md:text-5xl font-black text-black tracking-tight">How to redeem.</h2>
           </motion.div>
 
           <motion.div
@@ -596,7 +603,7 @@ export default function RewardsPage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.85, ease: E }}
-            className="max-w-4xl mx-auto bg-white/70 backdrop-blur-xl rounded-[2.5rem] p-10 shadow-2xl border border-white/60 space-y-7"
+            className="max-w-4xl mx-auto bg-white/70 backdrop-blur-xl rounded-2xl md:rounded-[2.5rem] p-6 md:p-10 shadow-2xl border border-white/60 space-y-5 md:space-y-7"
           >
             {redeemSteps.map((r, i) => (
               <motion.div
@@ -640,7 +647,7 @@ export default function RewardsPage() {
           ref={ctaRef}
           animate={{ backgroundColor: ctaInView ? "rgba(166,223,246,0.07)" : "rgba(255,253,247,0)" }}
           transition={{ duration: 1.3, ease: E }}
-          className="relative z-10 w-full px-6 py-28 overflow-hidden"
+          className="relative z-10 w-full px-6 py-16 md:py-28 overflow-hidden"
         >
           {/* Floating ambient ring */}
           <motion.div
@@ -669,7 +676,7 @@ export default function RewardsPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.8, ease: E, delay: 0.08 }}
-              className="text-5xl md:text-6xl font-black text-black tracking-tight mb-5 leading-tight"
+              className="text-3xl md:text-6xl font-black text-black tracking-tight mb-4 md:mb-5 leading-tight"
             >
               Ready to start earning?
             </motion.h2>
@@ -678,7 +685,7 @@ export default function RewardsPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.75, ease: E, delay: 0.16 }}
-              className="text-gray-400 text-lg mb-12 leading-relaxed"
+              className="text-gray-400 text-sm md:text-lg mb-8 md:mb-12 leading-relaxed"
             >
               Grab your Crumella Rewards card with your next order, then activate it online to start earning instantly.
             </motion.p>
@@ -691,7 +698,7 @@ export default function RewardsPage() {
               className="flex flex-col sm:flex-row gap-4 justify-center"
             >
               {/* Primary — glow ring pulse */}
-              <div className="relative inline-flex items-center justify-center">
+              <div className="relative w-full sm:w-auto inline-flex items-center justify-center">
                 <motion.div
                   animate={{ scale: [1, 1.55, 1], opacity: [0.35, 0, 0.35] }}
                   transition={{ duration: 2.4, repeat: Infinity, ease: "easeOut" }}
@@ -699,7 +706,7 @@ export default function RewardsPage() {
                 />
                 <Link
                   href="/points"
-                  className="relative group inline-flex items-center gap-3 rounded-full bg-black text-white font-bold px-10 py-4 text-base shadow-xl overflow-hidden hover:shadow-[0_0_50px_rgba(166,223,246,0.55)] hover:scale-105 active:scale-95 transition-all duration-500"
+                  className="relative group w-full sm:w-auto inline-flex items-center justify-center gap-3 rounded-full bg-black text-white font-bold px-10 py-4 text-base shadow-xl overflow-hidden hover:shadow-[0_0_50px_rgba(166,223,246,0.55)] hover:scale-105 active:scale-95 transition-all duration-500"
                 >
                   <span className="relative z-10">Check My Rewards</span>
                   <span className="relative z-10 group-hover:translate-x-1 transition-transform duration-300">&rarr;</span>
@@ -715,7 +722,7 @@ export default function RewardsPage() {
 
               <Link
                 href="/order"
-                className="group inline-flex items-center justify-center gap-2 rounded-full bg-white border-2 border-gray-200 text-black font-bold px-10 py-4 text-base transition-all duration-300 hover:border-black hover:shadow-lg hover:scale-105 active:scale-95"
+                className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-white border-2 border-gray-200 text-black font-bold px-10 py-4 text-base transition-all duration-300 hover:border-black hover:shadow-lg hover:scale-105 active:scale-95"
               >
                 Order Now
                 <span className="group-hover:translate-x-1 transition-transform duration-300">&rarr;</span>

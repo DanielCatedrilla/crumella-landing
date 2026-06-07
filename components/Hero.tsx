@@ -12,8 +12,8 @@ import 'swiper/css/effect-fade';
 const SLIDES = [
   {
     id: 1,
-    src: "/DS/DS23.png",
-    mobileSrc: "/MS/MS23.png",
+    src: "/DS/DS20.png",
+    mobileSrc: "/MS/MS20.png",
     alt: "Hero Slide 1",
   },
   {
