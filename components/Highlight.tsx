@@ -52,63 +52,36 @@ export default function Highlight() {
 
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
         
-        {/* Rewards Card */}
-        <div className="relative h-80 md:h-96 w-full overflow-hidden rounded-3xl bg-gradient-to-br from-[#a6dff6] via-[#ccecf9] to-[#9adcf7] p-8 shadow-md md:col-span-2 cursor-pointer group transition-all duration-500 hover:shadow-xl hover:-translate-y-1">
-          {/* Background blobs */}
-          <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-white/40 blur-3xl mix-blend-overlay pointer-events-none" />
-          <div className="absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-white/30 blur-3xl mix-blend-overlay pointer-events-none" />
+        {/* Under Maintenance Card */}
+        <div className="relative h-80 md:h-96 w-full overflow-hidden rounded-3xl bg-black p-8 shadow-md md:col-span-2 cursor-default select-none">
+          {/* Animated diagonal stripe background */}
+          <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "repeating-linear-gradient(45deg, #a6dff6 0px, #a6dff6 2px, transparent 2px, transparent 28px)" }} />
+          {/* Glowing orbs */}
+          <div className="absolute -top-20 -left-20 h-72 w-72 rounded-full bg-[#a6dff6] opacity-10 blur-3xl" />
+          <div className="absolute -bottom-20 -right-20 h-72 w-72 rounded-full bg-[#a6dff6] opacity-10 blur-3xl" />
 
-          <div className="relative z-10 flex h-full flex-col md:flex-row items-center justify-between gap-8">
-
-            {/* Text side */}
-            <div className="flex flex-col justify-center md:max-w-sm">
-              <span className="inline-flex items-center gap-1.5 mb-3 text-xs font-bold uppercase tracking-[0.2em] text-white bg-black/20 px-3 py-1 rounded-full self-start">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
-                Crumella Rewards
-              </span>
-              <h2 className="text-3xl md:text-4xl font-black text-black tracking-tight">
-                Earn Points,<br />Get Rewarded.
-              </h2>
-              <p className="mt-3 text-base font-medium text-black/60">
-                Every ₱20 spent earns 1 point. Redeem for free cookies and exclusive perks.
-              </p>
-              <Link href="/points" className="mt-6 self-start rounded-full bg-black px-6 py-2.5 text-sm font-bold text-white transition-colors duration-300 group-hover:bg-gray-800">
-                Get Your Card &rarr;
-              </Link>
-            </div>
-
-            {/* Card visual */}
-            <div className="hidden md:block shrink-0 w-72 aspect-[1.586/1] rounded-2xl bg-gradient-to-br from-[#7acfee] via-[#a6dff6] to-[#c8eaf8] shadow-[0_20px_40px_-10px_rgba(100,180,220,0.5)] border border-white/60 ring-1 ring-black/5 relative overflow-hidden transition-transform duration-500 group-hover:scale-[1.03] select-none">
-              <div className="absolute -top-16 -right-16 w-48 h-48 bg-white/40 rounded-full blur-2xl mix-blend-overlay" />
-              <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-white/30 rounded-full blur-2xl mix-blend-overlay" />
-              <div className="relative z-10 p-6 flex flex-col h-full justify-between">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-black text-2xl tracking-tighter italic text-black">Crumella<span className="text-white">.</span></h3>
-                    <p className="text-[9px] font-bold text-black/60 uppercase tracking-[0.2em] mt-0.5">Exclusive Rewards</p>
-                  </div>
-                  <svg className="w-6 h-6 text-black/20" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                    <path d="M12 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z"/>
-                  </svg>
-                </div>
-                <div>
-                  <p className="font-mono text-base tracking-widest text-black/70 mb-2">000 000 000</p>
-                  <div className="flex justify-between items-end">
-                    <div>
-                      <p className="text-[8px] text-black/40 font-bold uppercase tracking-widest mb-0.5">Card Holder</p>
-                      <p className="font-bold text-xs uppercase tracking-wide text-black">Your Name Here</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[8px] text-black/40 font-bold uppercase tracking-widest mb-0.5">Points</p>
-                      <p className="font-mono text-xs text-black font-bold">0 pts</p>
-                    </div>
-                  </div>
-                </div>
+          <div className="relative z-10 flex h-full flex-col justify-between">
+            <div className="flex items-start gap-4">
+              <div>
+                <span className="inline-flex items-center gap-1.5 mb-3 text-xs font-bold uppercase tracking-[0.2em] text-black bg-[#a6dff6] px-3 py-1 rounded-full">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-black animate-pulse" />
+                  Under Maintenance
+                </span>
+                <h2 className="text-3xl font-black text-white">
+                  Something Sweet is Coming
+                </h2>
+                <p className="mt-2 text-base font-medium text-white/50">
+                  We&apos;re putting the finishing touches on this. Check back soon.
+                </p>
               </div>
+              {/* Big wrench icon */}
+              <svg className="shrink-0 ml-auto w-16 h-16 text-[#a6dff6] opacity-30 hidden md:block" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l5.654-4.654m5.65-5.65 3.314 3.314m-6.064-1.336a3.25 3.25 0 0 1 4.5 4.5" />
+              </svg>
             </div>
-
+            <span className="self-start rounded-full border border-white/20 px-6 py-2 text-sm font-bold text-white/40 cursor-not-allowed">
+              Coming Soon
+            </span>
           </div>
         </div>
 
