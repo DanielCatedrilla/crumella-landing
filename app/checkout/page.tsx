@@ -40,6 +40,7 @@ export default function CheckoutPage() {
     longitude: null as number | null
   });
   const [locationError, setLocationError] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
   // Load saved checkout details and cart on mount
@@ -174,6 +175,10 @@ export default function CheckoutPage() {
         }
       }
       
+      // Blocked dates
+      const isJune9 = d.getFullYear() === 2026 && d.getMonth() === 5 && d.getDate() === 9;
+      if (isJune9) isValid = false;
+
       // Cutoff logic: Orders close at 10 PM (22:00) the day before
       if (isValid) {
         const cutoffTime = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1, 22, 0, 0);
@@ -201,7 +206,7 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const isDelivery = formData.orderType === 'delivery';
 
     if (isDelivery && (!formData.latitude || !formData.longitude)) {
@@ -209,6 +214,8 @@ export default function CheckoutPage() {
       alert("Please pin your exact delivery location on the map.");
       return;
     }
+
+    setIsSubmitting(true);
 
     const finalAddress = isDelivery
       ? `${formData.address}${formData.googleMapsLink ? `\n\n📍 Pinned Location: ${formData.googleMapsLink}` : ''}`
@@ -493,11 +500,22 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                <button 
-                  type="submit" 
-                  className="w-full bg-black text-white font-bold py-5 rounded-full hover:bg-[#a7dff4] hover:text-black hover:scale-[1.02] active:scale-95 transition-all duration-300 shadow-xl mt-6 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-black text-white font-bold py-5 rounded-full hover:bg-[#a7dff4] hover:text-black hover:scale-[1.02] active:scale-95 transition-all duration-300 shadow-xl mt-6 disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100 text-lg flex items-center justify-center gap-3"
                 >
-                   Place Order
+                  {isSubmitting ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      Processing...
+                    </>
+                  ) : (
+                    "Place Order"
+                  )}
                 </button>
                 
                 <p className="text-xs text-center text-gray-400 mt-6 font-medium">
