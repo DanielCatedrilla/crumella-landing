@@ -166,12 +166,6 @@ export default function CheckoutPage() {
           // Available every day except Fridays and March 18, 2026
           const isMarch18 = d.getFullYear() === 2026 && d.getMonth() === 2 && d.getDate() === 18;
           if (![0, 5, 6].includes(day) && !isMarch18) isValid = true;
-        } else if (formData.pickupLocation === "Molo Mansion") {
-          const isMay8to10 = d.getFullYear() === 2026 && d.getMonth() === 4 && [8, 9, 10].includes(d.getDate());
-          if (isMay8to10) isValid = true;
-        } else if (formData.pickupLocation === "Concrete Jungle") {
-          const isMay10to16 = d.getFullYear() === 2026 && d.getMonth() === 4 && d.getDate() >= 10 && d.getDate() <= 16;
-          if (isMay10to16) isValid = true;
         }
       }
       
@@ -363,8 +357,6 @@ export default function CheckoutPage() {
                         <option value="SM City Iloilo">SM City Iloilo</option>
                         <option value="Robinsons Place Jaro">Robinsons Place Jaro</option>
                         <option value="ISAT U">ISAT U</option>
-                        <option value="Molo Mansion">Molo Mansion</option>
-                        <option value="Concrete Jungle">Concrete Jungle</option>
                       </select>
                       <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
@@ -409,8 +401,6 @@ export default function CheckoutPage() {
                     {formData.orderType === "delivery" && "Available: Monday – Saturday"}
                     {formData.orderType === "pickup" && formData.pickupLocation === "Robinsons Place Jaro" && "Available: Tuesdays, Thursdays"}
                     {formData.orderType === "pickup" && formData.pickupLocation === "SM City Iloilo" && "Available: Saturdays"}
-                    {formData.orderType === "pickup" && formData.pickupLocation === "Molo Mansion" && "Available: May 8, 9 & 10 only"}
-                    {formData.orderType === "pickup" && formData.pickupLocation === "Concrete Jungle" && "Available: May 10 – 16 only"}
                   </p>
                 </div>
 
