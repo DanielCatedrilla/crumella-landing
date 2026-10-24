@@ -173,8 +173,8 @@ export default function CheckoutPage() {
       const isJune9 = d.getFullYear() === 2026 && d.getMonth() === 5 && d.getDate() === 9;
       if (isJune9) isValid = false;
 
-      // No delivery team Oct 9–11, 2026 — back to normal Oct 12, 2026
-      const isClosureWindow = d.getFullYear() === 2026 && d.getMonth() === 9 && [9, 10, 11].includes(d.getDate());
+      // No delivery team Oct 25–27, 2026 — back to normal Oct 28, 2026
+      const isClosureWindow = d.getFullYear() === 2026 && d.getMonth() === 9 && [25, 26, 27].includes(d.getDate());
       if (isClosureWindow) isValid = false;
 
       // Cutoff logic: Orders close at 10 PM (22:00) the day before
@@ -193,7 +193,7 @@ export default function CheckoutPage() {
   const availableDates = getAvailableDates();
 
   // Show the closure notice until the window has passed, then it hides itself.
-  const showClosureNotice = new Date() <= new Date(2026, 9, 11, 23, 59, 59, 999);
+  const showClosureNotice = new Date() <= new Date(2026, 9, 27, 23, 59, 59, 999);
 
   const handleLocationSelect = useCallback((lat: number, lng: number) => {
     setFormData((prev) => ({
@@ -411,7 +411,7 @@ export default function CheckoutPage() {
                   </p>
                   {showClosureNotice && (
                     <p className="text-xs text-red-500 mt-1 ml-1 font-semibold">
-                      No deliveries or pickups Oct 9–11, 2026 — we&apos;ll be back Oct 12, 2026.
+                      No deliveries or pickups Oct 25–27, 2026 — we&apos;ll be right back Oct 28, 2026.
                     </p>
                   )}
                 </div>
