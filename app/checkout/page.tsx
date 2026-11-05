@@ -12,9 +12,9 @@ const LocationPicker = dynamic(() => import('../../components/LocationPicker'), 
 
 const STORE_LOCATION = { lat: 10.7819, lng: 122.5438 }; // Store coordinates (GT Town Center Pavia)
 
-// No delivery team Oct 31 – Nov 3, 2026 — back to normal Nov 4, 2026.
-const CLOSURE_START = new Date(2026, 9, 31);
-const CLOSURE_END = new Date(2026, 10, 3);
+// No delivery team Nov 6–7, 2026 — back to normal Nov 8, 2026.
+const CLOSURE_START = new Date(2026, 10, 6);
+const CLOSURE_END = new Date(2026, 10, 7);
 
 const generateTrackingCode = () => {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -177,7 +177,7 @@ export default function CheckoutPage() {
       const isJune9 = d.getFullYear() === 2026 && d.getMonth() === 5 && d.getDate() === 9;
       if (isJune9) isValid = false;
 
-      // No delivery team Oct 31 – Nov 3, 2026 — back to normal Nov 4, 2026
+      // No delivery team Nov 6–7, 2026 — back to normal Nov 8, 2026
       const dateOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate());
       if (dateOnly >= CLOSURE_START && dateOnly <= CLOSURE_END) isValid = false;
 
@@ -415,7 +415,7 @@ export default function CheckoutPage() {
                   </p>
                   {showClosureNotice && (
                     <p className="text-xs text-red-500 mt-1 ml-1 font-semibold">
-                      No deliveries or pickups Oct 31 – Nov 3, 2026 — we&apos;ll be right back Nov 4, 2026.
+                      No deliveries or pickups Nov 6–7, 2026 — we&apos;ll be right back Nov 8, 2026.
                     </p>
                   )}
                 </div>
