@@ -1,0 +1,14 @@
+-- =====================================================================
+-- BACKLOG 3 — ADMIN LIVE ORDER UPDATES
+--
+-- The admin page subscribes to order changes, but the orders table was
+-- never added to the realtime publication, so nothing ever arrived.
+--
+-- Realtime applies the table's access rules per subscriber: only the
+-- admin (who may SELECT orders) receives inserts/updates. Customers and
+-- strangers have no SELECT on orders and receive nothing.
+-- (verified by supabase/tests/realtime.test.mjs)
+--
+-- Rollback: supabase/rollback/20261119000200_admin_realtime_down.sql
+-- =====================================================================
+alter publication supabase_realtime add table public.orders;

@@ -12,3 +12,5 @@ docker restart "supabase_kong_$(grep -m1 '^project_id' supabase/config.toml | cu
 node supabase/tests/lockdown.test.mjs
 echo "--- prices ---"
 node supabase/tests/prices.test.mjs
+echo "--- realtime ---"
+node supabase/tests/realtime.test.mjs

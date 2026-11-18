@@ -7,6 +7,27 @@ import Link from "next/link";
 
 const STORE_LOCATION = { lat: 10.7819, lng: 122.5438 }; // GT Town Center Pavia
 
+// Delivery date first, then time window (orders without a date go last).
+function sortOrders(list: any[]): any[] {
+  const getTimeVal = (t: string) => {
+    if (!t) return 9999;
+    const match = t.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm|AM|PM)?/);
+    if (!match) return 9999;
+    let h = parseInt(match[1]);
+    const m = match[2] ? parseInt(match[2]) : 0;
+    const mer = match[3]?.toLowerCase();
+    if (mer === 'pm' && h < 12) h += 12;
+    if (mer === 'am' && h === 12) h = 0;
+    return h * 60 + m;
+  };
+  return [...list].sort((a, b) => {
+    const dateA = a.customer?.date || '9999-12-31';
+    const dateB = b.customer?.date || '9999-12-31';
+    if (dateA !== dateB) return dateA.localeCompare(dateB);
+    return getTimeVal(a.customer?.timeWindow || '') - getTimeVal(b.customer?.timeWindow || '');
+  });
+}
+
 export default function AdminPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -15,6 +36,9 @@ export default function AdminPage() {
   const [vouchers, setVouchers] = useState<any[]>([]);
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'orders' | 'vouchers' | 'statistics' | 'feedbacks'>('orders');
+  const [newOrderToast, setNewOrderToast] = useState<{ id: any; tracking: string; name: string } | null>(null);
+  const [freshIds, setFreshIds] = useState<Set<any>>(new Set());
+  const [liveStatus, setLiveStatus] = useState<'connecting' | 'live' | 'paused' | 'error'>('connecting');
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [orderFilter, setOrderFilter] = useState('All');
@@ -54,27 +78,19 @@ export default function AdminPage() {
     if (error) {
       console.error("Error fetching orders:", error);
     } else {
-      const sortedData = (data || []).sort((a, b) => {
-        const dateA = a.customer?.date || '9999-12-31';
-        const dateB = b.customer?.date || '9999-12-31';
-        if (dateA !== dateB) return dateA.localeCompare(dateB);
-
-        const getTimeVal = (t: string) => {
-          if (!t) return 9999;
-          const match = t.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm|AM|PM)?/);
-          if (!match) return 9999;
-          let h = parseInt(match[1]);
-          const m = match[2] ? parseInt(match[2]) : 0;
-          const mer = match[3]?.toLowerCase();
-          if (mer === 'pm' && h < 12) h += 12;
-          if (mer === 'am' && h === 12) h = 0;
-          return h * 60 + m;
-        };
-        return getTimeVal(a.customer?.timeWindow || '') - getTimeVal(b.customer?.timeWindow || '');
-      });
-      setOrders(sortedData);
+      setOrders(sortOrders(data || []));
     }
     setLoading(false);
+  };
+
+  // Update ONE order in the list (from a live update or our own edit)
+  // instead of re-downloading every order — keeps data usage tiny.
+  const upsertOrder = (row: any) => {
+    if (!row?.id) return;
+    setOrders((prev) => sortOrders([...prev.filter((o) => o.id !== row.id), row]));
+  };
+  const removeOrder = (id: any) => {
+    setOrders((prev) => prev.filter((o) => o.id !== id));
   };
 
   const fetchVouchers = async () => {
@@ -101,16 +117,77 @@ export default function AdminPage() {
       await fetchFeedbacks();
     };
     void load();
+  }, [isAuthenticated]);
 
-    const channel = supabase
-      .channel('realtime orders')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        void fetchOrders(true);
-      })
-      .subscribe();
+  // Live order updates. Each event carries just the one changed order, which
+  // we patch into the list. The feed is paused while this tab is hidden and,
+  // on return, orders are re-synced once (in case something was missed).
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
 
+    const onEvent = (p: any) => {
+      // Without the admin login the feed only sends empty "unauthorized" notices.
+      if (p.errors?.length) {
+        console.warn('Live orders: not authorised', p.errors);
+        setLiveStatus('error');
+        return;
+      }
+      if (p.eventType === 'DELETE') removeOrder(p.old?.id);
+      else upsertOrder(p.new);
+      // The list is sorted by delivery date, so a new order may land out of
+      // view: announce it and highlight its row for 20 seconds.
+      if (p.eventType === 'INSERT' && p.new?.id) {
+        const id = p.new.id;
+        setNewOrderToast({ id, tracking: p.new.tracking_number || `#${id}`, name: p.new.customer?.name || '' });
+        setFreshIds((prev) => new Set(prev).add(id));
+        setTimeout(() => setFreshIds((prev) => { const n = new Set(prev); n.delete(id); return n; }), 20000);
+      }
+    };
+
+    const start = async () => {
+      if (channel) return;
+      setLiveStatus('connecting');
+      // Hand the admin login to the live feed explicitly (after a page refresh
+      // the restored login is not always passed on automatically).
+      const { data: { session } } = await supabase.auth.getSession();
+      if (cancelled || channel) return;
+      if (session?.access_token) supabase.realtime.setAuth(session.access_token);
+      channel = supabase
+        .channel(`admin-orders-${Date.now()}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, onEvent)
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') setLiveStatus('live');
+          else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setLiveStatus('error');
+        });
+    };
+    const stop = () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+        channel = null;
+      }
+    };
+    let hiddenAt = 0;
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        hiddenAt = Date.now();
+        stop();
+        setLiveStatus('paused');
+      } else {
+        // One catch-up download, only if away long enough to have missed something.
+        if (hiddenAt && Date.now() - hiddenAt > 60_000) void fetchOrders(true);
+        void start();
+      }
+    };
+
+    if (document.visibilityState !== 'hidden') void start();
+    else setLiveStatus('paused');
+    document.addEventListener('visibilitychange', onVisibility);
     return () => {
-      supabase.removeChannel(channel);
+      cancelled = true;
+      document.removeEventListener('visibilitychange', onVisibility);
+      stop();
     };
   }, [isAuthenticated]);
 
@@ -283,42 +360,48 @@ export default function AdminPage() {
   };
 
   const updateStatus = async (id: any, newStatus: string) => {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('orders')
       .update({ status: newStatus })
-      .eq('id', id);
+      .eq('id', id)
+      .select()
+      .single();
 
     if (error) {
       alert("Error updating status");
     } else {
-      fetchOrders(true); // Refresh list to show new status
+      upsertOrder(data); // patch just this order (no full re-download)
     }
   };
 
   const updateOrderDate = async (id: any, currentCustomer: any, newDate: string) => {
     const updatedCustomer = { ...currentCustomer, date: newDate };
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('orders')
       .update({ customer: updatedCustomer })
-      .eq('id', id);
+      .eq('id', id)
+      .select()
+      .single();
 
     if (error) {
       alert("Error updating date");
     } else {
-      fetchOrders(true);
+      upsertOrder(data);
     }
   };
 
   const updatePaymentMethod = async (id: any, newMethod: string) => {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('orders')
       .update({ paymentMethod: newMethod })
-      .eq('id', id);
+      .eq('id', id)
+      .select()
+      .single();
 
     if (error) {
       alert("Error updating payment method");
     } else {
-      fetchOrders(true);
+      upsertOrder(data);
     }
   };
 
@@ -340,15 +423,17 @@ export default function AdminPage() {
       if (originalTotal !== undefined) updatedCustomer.originalTotal = originalTotal;
     }
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('orders')
       .update({ finalTotal: newTotal, customer: updatedCustomer })
-      .eq('id', id);
+      .eq('id', id)
+      .select()
+      .single();
 
     if (error) {
       alert("Error updating total");
     } else {
-      fetchOrders(true);
+      upsertOrder(data);
     }
   };
 
@@ -486,10 +571,54 @@ export default function AdminPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8 font-sans">
+      {newOrderToast && (
+        <div role="status" className="fixed bottom-5 right-5 z-50 bg-black text-white rounded-2xl shadow-2xl px-5 py-4 flex items-center gap-4 max-w-sm">
+          <div>
+            <div className="text-xs font-bold uppercase tracking-wider text-yellow-300">🆕 New order</div>
+            <div className="font-black font-mono">{newOrderToast.tracking}</div>
+            {newOrderToast.name && <div className="text-sm text-gray-300">{newOrderToast.name}</div>}
+          </div>
+          <button
+            className="bg-yellow-300 text-black text-sm font-bold px-3 py-2 rounded-lg hover:bg-yellow-200"
+            onClick={() => {
+              const id = newOrderToast.id;
+              setActiveTab('orders');
+              setNewOrderToast(null);
+              setTimeout(() => {
+                const el = [...document.querySelectorAll(`[data-order-row="${id}"]`)]
+                  .find((e) => (e as HTMLElement).offsetParent !== null);
+                el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 50);
+            }}
+          >
+            Show
+          </button>
+          <button aria-label="Dismiss" className="text-gray-400 hover:text-white text-lg leading-none" onClick={() => setNewOrderToast(null)}>×</button>
+        </div>
+      )}
       <div>
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6 md:mb-8">
           <h1 className="text-2xl md:text-3xl font-black text-black">Admin Dashboard</h1>
           <div className="flex items-center gap-4 self-start md:self-auto">
+            <span
+              title={
+                liveStatus === 'live' ? 'New orders and changes appear automatically'
+                : liveStatus === 'paused' ? 'Paused while this tab is hidden'
+                : liveStatus === 'error' ? 'Live updates not connected. Refresh, or log out and in again'
+                : 'Connecting to live updates…'
+              }
+              className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap ${
+                liveStatus === 'live' ? 'bg-green-100 text-green-700'
+                : liveStatus === 'error' ? 'bg-red-100 text-red-700'
+                : 'bg-gray-100 text-gray-500'
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full ${
+                liveStatus === 'live' ? 'bg-green-500 animate-pulse'
+                : liveStatus === 'error' ? 'bg-red-500' : 'bg-gray-400'
+              }`} />
+              {liveStatus === 'live' ? 'Live' : liveStatus === 'paused' ? 'Paused' : liveStatus === 'error' ? 'Not connected' : 'Connecting…'}
+            </span>
             <Link href="/" className="text-sm font-bold underline hover:text-gray-600 whitespace-nowrap">Back to Home</Link>
             <button 
               onClick={handleLogout}
@@ -586,7 +715,7 @@ export default function AdminPage() {
               </thead>
               <tbody>
                 {filteredOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-slate-50/50 transition-colors border-b border-gray-100 last:border-b-0">
+                  <tr key={order.id} data-order-row={order.id} className={`hover:bg-slate-50/50 transition-colors border-b border-gray-100 last:border-b-0 ${freshIds.has(order.id) ? 'bg-yellow-50 ring-2 ring-inset ring-yellow-300' : ''}`}>
                     <td className="p-5 font-bold text-gray-500">{order.id}</td>
                     <td className="p-5 font-bold text-gray-900 font-mono">{order.tracking_number || '-'}</td>
                     <td className="p-5 text-gray-700 whitespace-nowrap">
@@ -808,7 +937,7 @@ export default function AdminPage() {
         {/* Mobile View (Cards) */}
         <div className="md:hidden space-y-4">
           {filteredOrders.map((order) => (
-            <div key={order.id} className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-lg border border-white/50 flex flex-col gap-4">
+            <div key={order.id} data-order-row={order.id} className={`bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-lg border flex flex-col gap-4 ${freshIds.has(order.id) ? 'border-yellow-300 ring-2 ring-yellow-300' : 'border-white/50'}`}>
               <div className="flex justify-between items-start">
                 <div>
                   {order.status === 'New' && (
