@@ -20,11 +20,9 @@ export default function TrackOrderPage() {
     setSearched(true);
     setOrder(null);
 
-    const { data, error } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('tracking_number', searchId.trim())
-      .single();
+    const { data, error } = await supabase.rpc('track_order', {
+      p_tracking_number: searchId.trim(),
+    });
 
     if (!error && data) {
       setOrder(data);
@@ -36,11 +34,9 @@ export default function TrackOrderPage() {
     if (!order?.tracking_number) return;
     
     setLoading(true);
-    const { data, error } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('tracking_number', order.tracking_number)
-      .single();
+    const { data, error } = await supabase.rpc('track_order', {
+      p_tracking_number: order.tracking_number,
+    });
 
     if (!error && data) {
       setOrder(data);

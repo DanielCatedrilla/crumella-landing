@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import VoucherInput from "../../components/VoucherInput";
 import { supabase } from "../../components/supabase";
+import { friendlyError } from "../../components/dbErrors";
 import emailjs from '@emailjs/browser';
 
 export default function PaymentPage() {
@@ -45,13 +46,11 @@ export default function PaymentPage() {
             setRewardsId(redemption.unique_id);
             setIsValidating(true);
             
-            const { data } = await supabase
-              .from('loyalty_cards')
-              .select('is_activated, first_name')
-              .eq('unique_id', redemption.unique_id)
-              .single();
+            const { data } = await supabase.rpc('check_rewards_card', {
+              p_unique_id: redemption.unique_id,
+            });
 
-            if (data && data.is_activated) {
+            if (data && data.activated && !data.expired) {
               setIsRewardsIdValid(true);
               setValidationMessage(`Card linked: ${data.first_name}`);
             }
@@ -94,17 +93,18 @@ export default function PaymentPage() {
     setIsRewardsIdValid(null);
 
     try {
-      const { data, error } = await supabase
-        .from('loyalty_cards')
-        .select('is_activated, first_name')
-        .eq('unique_id', rewardsId)
-        .single();
+      const { data, error } = await supabase.rpc('check_rewards_card', {
+        p_unique_id: rewardsId,
+      });
 
-      if (error || !data) {
+      if (error || !data || !data.found) {
         setValidationMessage("Invalid Unique ID. Please check and try again.");
         setIsRewardsIdValid(false);
-      } else if (!data.is_activated) {
+      } else if (!data.activated) {
         setValidationMessage("This card is not activated yet. Please activate it on the Rewards page.");
+        setIsRewardsIdValid(false);
+      } else if (data.expired) {
+        setValidationMessage("This rewards card has expired.");
         setIsRewardsIdValid(false);
       } else {
         setValidationMessage(`Card validated for ${data.first_name}! Points will be added on confirmation.`);
@@ -127,102 +127,53 @@ export default function PaymentPage() {
     setLoading(true);
 
     try {
-        let proofUrl = "";
-
-        // 1. Upload Proof Image (if exists)
+        // 1. Upload proof image (private bucket, customers can only upload)
+        let proofPath: string | null = null;
         if (proofFile) {
-            const fileName = `${Date.now()}_${proofFile.name}`;
-            const { data: uploadData, error: uploadError } = await supabase.storage
+            const ext = (proofFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 5) || 'jpg';
+            proofPath = `orders/${order.tracking_number}_${Date.now()}.${ext}`;
+            const { error: uploadError } = await supabase.storage
                 .from('proofs')
-                .upload(fileName, proofFile);
+                .upload(proofPath, proofFile, { contentType: proofFile.type || 'image/jpeg' });
 
-            if (uploadError) throw uploadError;
-            
-            const { data: { publicUrl } } = supabase.storage.from('proofs').getPublicUrl(fileName);
-            proofUrl = publicUrl;
+            if (uploadError) {
+              alert("We couldn't upload your proof of payment. Please make sure it's an image under 10 MB and try again.");
+              return;
+            }
         }
 
-        // 2. Prepare Order Data
-        const finalTotal = calculatedTotal - discount;
-        // Explicitly construct the final order data to prevent stale or unexpected properties
-        // from localStorage from being sent to the database. This is safer than spreading `...order`.
-        const orderData = {
-            customer: order.customer,
-            items: order.items,
-            total: calculatedTotal,
-            tracking_number: order.tracking_number,
-            paymentMethod,
-            proofUrl,
-            voucherCode: discount > 0 ? voucherCode : null,
-            discount,
-            finalTotal,
-            status: "New",
-            createdAt: new Date().toISOString(),
-        };
-
-        // 3. Save to Supabase Database
-        const { error: insertError } = await supabase.from('orders').insert([orderData]);
-
-        if (insertError) throw insertError;
-
-        // 4. Increment Voucher Usage
-        if (discount > 0 && voucherCode) {
-          const { data: v } = await supabase.from('vouchers').select('id, used_count').eq('code', voucherCode).single();
-          if (v) {
-            await supabase.from('vouchers').update({ used_count: v.used_count + 1 }).eq('id', v.id);
-          }
-        }
-
-        // 5a. Deduct points for redeemed item (if any)
+        // 2. Place the order. The server re-checks the voucher, counts its use,
+        //    deducts/adds points and saves the order in one step.
         const pendingRedemptionRaw = localStorage.getItem('pending_redemption');
+        let redemptionCard: string | null = null;
         if (pendingRedemptionRaw) {
-          // Handle both array (new) and object (legacy) formats
-          const parsed = JSON.parse(pendingRedemptionRaw);
-          const pendingRedemptions = Array.isArray(parsed) ? parsed : [parsed];
-
-          for (const pendingRedemption of pendingRedemptions) {
-            if (pendingRedemption.unique_id && pendingRedemption.points_cost > 0) {
-            try {
-              const { error: deductError } = await supabase.rpc('deduct_points', {
-                card_id: pendingRedemption.unique_id,
-                points_to_deduct: Number(pendingRedemption.points_cost)
-              });
-
-              if (deductError) {
-                // Log error for manual correction, but don't block the user.
-                // The order is already placed.
-                console.error('CRITICAL: Failed to deduct points for redemption:', deductError.message || deductError);
-              }
-            } catch (redemptionError) {
-              console.error('CRITICAL: An unexpected error occurred during point deduction:', redemptionError);
-            }
-          }
-          }
-        }
-
-        // 5. Add points to loyalty card (if provided)
-        let pointsToAdd = 0;
-        if (rewardsId && isRewardsIdValid) {
           try {
-            pointsToAdd = Math.floor(finalTotal / 20);
-            if (pointsToAdd > 0) {
-              const { error: rewardsError } = await supabase.rpc('add_points', {
-                points_to_add: pointsToAdd,
-                card_id: rewardsId
-              });
-
-              if (rewardsError) {
-                // Log error but don't block the user flow
-                console.error('Failed to add points to rewards card:', rewardsError);
-              }
-            }
-          } catch (rewardsError) {
-            // Log error but don't block the user flow
-            console.error('An unexpected error occurred while adding points:', rewardsError);
-          }
+            const parsed = JSON.parse(pendingRedemptionRaw);
+            const first = Array.isArray(parsed) ? parsed[0] : parsed;
+            redemptionCard = first?.unique_id || null;
+          } catch {}
         }
 
-        // 6. Cleanup & Redirect
+        const { data: placed, error: placeError } = await supabase.rpc('place_order', {
+          p_customer: order.customer,
+          p_items: order.items,
+          p_tracking_number: order.tracking_number,
+          p_payment_method: paymentMethod,
+          p_proof_path: proofPath,
+          p_voucher_code: discount > 0 ? voucherCode : null,
+          p_rewards_id: rewardsId && isRewardsIdValid ? rewardsId : null,
+          p_redemption_card: redemptionCard,
+        });
+
+        if (placeError || !placed) {
+          alert(friendlyError(placeError));
+          return;
+        }
+
+        const finalTotal = Number(placed.final_total) || 0;
+        const pointsToAdd = Number(placed.points_earned) || 0;
+
+        // 3. Cleanup & Redirect
         localStorage.removeItem("latestOrder");
         localStorage.removeItem("pending_redemption"); // Clean up redemption data
         let redirectUrl = `/success?trackingNumber=${order.tracking_number}`;

@@ -20,52 +20,26 @@ export default function VoucherInput({ cartTotal, onApply }: VoucherInputProps) 
     setStatus('idle');
 
     try {
-      // 1. Fetch voucher
-      const { data: voucher, error } = await supabase
-        .from('vouchers')
-        .select('*')
-        .eq('code', code)
-        .eq('is_active', true)
-        .single();
+      // The server checks the code (active, expiry, usage limit, min spend)
+      // and works out the discount. The final check happens again at checkout.
+      const { data: result, error } = await supabase.rpc('check_voucher', {
+        p_code: code,
+        p_cart_total: cartTotal,
+      });
 
-      if (error || !voucher) {
+      if (error || !result) {
         setStatus('error');
-        setMessage("Invalid or inactive code");
+        setMessage("Error validating voucher");
         return;
       }
 
-      // 2. Check Expiration
-      if (voucher.expires_at && new Date(voucher.expires_at) < new Date()) {
+      if (!result.valid) {
         setStatus('error');
-        setMessage(`Expired on ${new Date(voucher.expires_at).toLocaleDateString()}`);
+        setMessage(result.message || "Invalid or inactive code");
         return;
       }
 
-      // 3. Check Usage Limit
-      if (voucher.max_uses && voucher.used_count >= voucher.max_uses) {
-        setStatus('error');
-        setMessage("Voucher fully redeemed");
-        return;
-      }
-
-      // 4. Check Min Spend
-      if (cartTotal < voucher.min_spend) {
-        setStatus('error');
-        setMessage(`Minimum spend of ₱${voucher.min_spend} required`);
-        return;
-      }
-
-      // 5. Calculate Discount
-      let discountAmount = 0;
-      if (voucher.type === 'fixed') {
-        discountAmount = voucher.value;
-      } else {
-        // Percentage
-        discountAmount = (cartTotal * voucher.value) / 100;
-      }
-
-      // Cap discount at cart total
-      if (discountAmount > cartTotal) discountAmount = cartTotal;
+      const discountAmount = Number(result.discount) || 0;
 
       setStatus('success');
       setMessage(`Applied! ₱${discountAmount.toFixed(2)} off`);

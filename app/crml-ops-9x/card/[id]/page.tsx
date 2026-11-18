@@ -56,6 +56,7 @@ function LoyaltyCard({ user }: { user: any }) {
 export default function AdminCardPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(true);
   const [cardUser, setCardUser] = useState<any>(null);
@@ -112,10 +113,10 @@ export default function AdminCardPage({ params }: { params: Promise<{ id: string
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const { error } = await supabase.auth.signInWithPassword({
-      email: "compsci.daniel23@gmail.com",
+      email: email.trim(),
       password,
     });
-    if (error) alert("Incorrect password");
+    if (error) alert("Incorrect email or password");
   };
 
   const handleTransaction = async (e: React.FormEvent) => {
@@ -194,7 +195,16 @@ export default function AdminCardPage({ params }: { params: Promise<{ id: string
           <h1 className="text-2xl font-black text-center mb-6 text-gray-900">Admin Login Required</h1>
           <p className="text-center text-gray-600 mb-4 text-sm">You must be logged in as an admin to access this page.</p>
           <input
+            type="email"
+            autoComplete="username"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 mb-3 outline-none focus:border-black transition-all text-gray-900 placeholder-gray-500"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <input
             type="password"
+            autoComplete="current-password"
             className="w-full px-4 py-3 rounded-xl border border-gray-200 mb-4 outline-none focus:border-black transition-all text-gray-900 placeholder-gray-500"
             placeholder="Enter Admin Password"
             value={password}

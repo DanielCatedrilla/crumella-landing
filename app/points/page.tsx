@@ -6,6 +6,7 @@ import Image from "next/image";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { supabase } from "../../components/supabase";
+import { friendlyError } from "../../components/dbErrors";
 import { ORDER_ITEMS } from "../../components/Menu";
 
 const REDEEMABLES = [
@@ -316,14 +317,11 @@ export default function RewardsPage() {
     dispatch({ type: 'API_START' });
 
     try {
-      // Query Supabase for the user's card
-      // Assumes a table 'loyalty_cards' exists with these columns
-      const { data, error } = await supabase
-        .from('loyalty_cards')
-        .select('*')
-        .eq('unique_id', loginUniqueId)
-        .ilike('last_name', loginLastName) // Case-insensitive match for last name
-        .single();
+      // Server returns only this one card, and only if ID + last name match
+      const { data, error } = await supabase.rpc('rewards_login', {
+        p_unique_id: loginUniqueId,
+        p_last_name: loginLastName,
+      });
 
       if (error || !data) {
         console.error("Login query error:", error);
@@ -345,48 +343,22 @@ export default function RewardsPage() {
     dispatch({ type: 'API_START' });
 
     try {
-      // 1. Check if card exists and is not activated
-      const { data: cardData, error: cardError } = await supabase
-        .from('loyalty_cards')
-        .select('is_activated')
-        .eq('unique_id', activateUniqueId)
-        .single();
+      // Server checks the card exists and is not yet activated, then
+      // activates it (expiry fixed at March 31, 2028) in one step.
+      const { data, error: updateError } = await supabase.rpc('activate_rewards_card', {
+        p_unique_id: activateUniqueId,
+        p_first_name: activateFirstName,
+        p_last_name: activateLastName,
+        p_phone: activatePhone,
+        p_email: activateEmail,
+      });
 
-      if (cardError || !cardData) {
-        dispatch({ type: 'ACTIVATE_FAILURE', payload: "Invalid Unique ID. Please check the ID on your physical card." });
-        return;
-      }
-
-      if (cardData.is_activated) {
-        dispatch({ type: 'ACTIVATE_FAILURE', payload: "This card has already been activated. Please try checking your points instead." });
-        return;
-      }
-
-      // 2. If it exists and is not activated, update it with user details
-      // Set a fixed expiration date: March 31, 2028
-      const expiryDate = new Date('2028-03-31T23:59:59Z');
-
-      const { data, error: updateError } = await supabase
-        .from('loyalty_cards')
-        .update({
-          first_name: activateFirstName,
-          last_name: activateLastName,
-          phone_number: activatePhone,
-          email: activateEmail,
-          is_activated: true,
-          expires_at: expiryDate.toISOString(),
-        })
-        .eq('unique_id', activateUniqueId)
-        .select()
-        .single();
-
-      if (updateError) {
+      if (updateError || !data) {
         console.error("Card activation error:", updateError);
-        if (updateError.message && updateError.message.includes('duplicate key')) {
-            dispatch({ type: 'ACTIVATE_FAILURE', payload: "An account with this email or phone number may already exist. Please try checking your points instead." });
-        } else {
-            dispatch({ type: 'ACTIVATE_FAILURE', payload: "Could not activate card. Please check your details and try again." });
-        }
+        dispatch({
+          type: 'ACTIVATE_FAILURE',
+          payload: friendlyError(updateError, "Could not activate card. Please check your details and try again."),
+        });
       } else {
         dispatch({ type: 'ACTIVATE_SUCCESS', payload: data });
       }

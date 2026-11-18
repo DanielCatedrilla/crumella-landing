@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../components/supabase";
 import { MENU_ITEMS } from "../../components/Menu";
+import ProofLink from "../../components/ProofLink";
 import Link from "next/link";
 
 const STORE_LOCATION = { lat: 10.7819, lng: 122.5438 }; // GT Town Center Pavia
@@ -14,6 +15,7 @@ export default function AdminPage() {
   const [vouchers, setVouchers] = useState<any[]>([]);
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'orders' | 'vouchers' | 'statistics' | 'feedbacks'>('orders');
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [orderFilter, setOrderFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState("");
@@ -218,11 +220,11 @@ export default function AdminPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const { error } = await supabase.auth.signInWithPassword({
-      email: "compsci.daniel23@gmail.com",
+      email: email.trim(),
       password,
     });
     if (error) {
-      alert("Incorrect password");
+      alert("Incorrect email or password");
     }
   };
 
@@ -456,7 +458,16 @@ export default function AdminPage() {
         <form onSubmit={handleLogin} className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 w-full max-w-sm">
           <h1 className="text-2xl font-black text-center mb-6 text-gray-900">Admin Login</h1>
           <input
+            type="email"
+            autoComplete="username"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 mb-3 outline-none focus:border-black transition-all text-gray-900 placeholder-gray-500"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <input
             type="password"
+            autoComplete="current-password"
             className="w-full px-4 py-3 rounded-xl border border-gray-200 mb-4 outline-none focus:border-black transition-all text-gray-900 placeholder-gray-500"
             placeholder="Enter Password"
             value={password}
@@ -730,9 +741,9 @@ export default function AdminPage() {
                     </td>
                     <td className="p-5">
                       {order.proofUrl ? (
-                        <a href={order.proofUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs font-bold">
+                        <ProofLink proofUrl={order.proofUrl} className="text-blue-600 hover:underline text-xs font-bold">
                           View Image
-                        </a>
+                        </ProofLink>
                       ) : (
                         <span className="text-gray-400 text-xs font-medium">No Proof</span>
                       )}
@@ -955,9 +966,9 @@ export default function AdminPage() {
                    )}
                 </div>
                 {order.proofUrl && (
-                   <a href={order.proofUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-xs font-bold hover:underline">
+                   <ProofLink proofUrl={order.proofUrl} className="text-blue-600 text-xs font-bold hover:underline">
                      View Proof
-                   </a>
+                   </ProofLink>
                 )}
               </div>
 

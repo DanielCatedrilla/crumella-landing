@@ -211,12 +211,13 @@ export default function Menu(){
 
     useEffect(() => {
         const fetchRatings = async () => {
-            const { data } = await supabase.from('feedbacks').select('ratings');
-            if (data) {
+            // Server returns only the ratings (no names/emails).
+            const { data } = await supabase.rpc('public_feedback_ratings');
+            if (Array.isArray(data)) {
                 const map: Record<string, { total: number; count: number }> = {};
-                data.forEach((fb: any) => {
-                    if (fb.ratings) {
-                        Object.entries(fb.ratings).forEach(([name, scores]: [string, any]) => {
+                data.forEach((ratings: any) => {
+                    if (ratings) {
+                        Object.entries(ratings).forEach(([name, scores]: [string, any]) => {
                             if (!map[name]) map[name] = { total: 0, count: 0 };
                             const taste = Number(scores.taste) || 0;
                             const texture = Number(scores.texture) || 0;
