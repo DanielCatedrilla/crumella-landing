@@ -309,6 +309,24 @@ function rewardsReducer(state: RewardsState, action: RewardsAction): RewardsStat
 
 export default function RewardsPage() {
   const [state, dispatch] = React.useReducer(rewardsReducer, initialState);
+
+  // Reward point costs come from the database (the server enforces them at
+  // checkout). The numbers in REDEEMABLES are only a fallback if this fails.
+  const [rewardCosts, setRewardCosts] = useState<Record<string, number> | null>(null);
+  useEffect(() => {
+    supabase
+      .from('rewards_catalog')
+      .select('item_name, points_cost')
+      .then(({ data }) => {
+        if (data) setRewardCosts(Object.fromEntries(data.map((r: any) => [r.item_name, Number(r.points_cost)])));
+      });
+  }, []);
+  const redeemables = React.useMemo(
+    () => REDEEMABLES
+      .filter((item) => !rewardCosts || item.name in rewardCosts)   // hide rewards switched off in the DB
+      .map((item) => ({ ...item, points: rewardCosts?.[item.name] ?? item.points })),
+    [rewardCosts]
+  );
   const { view, isLoading, user, selectedRedeemable, error, loginUniqueId, loginLastName, activateUniqueId, activateFirstName, activateLastName, activatePhone, activateEmail } = state;
   const router = useRouter();
 
@@ -603,7 +621,7 @@ export default function RewardsPage() {
                     <div className="bg-white/60 backdrop-blur-xl p-8 md:p-10 rounded-[2.5rem] shadow-xl border border-white/50">
                         <h3 className="text-3xl font-black text-black mb-8 tracking-tight">Exclusive Rewards</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {REDEEMABLES.map((item) => (
+                            {redeemables.map((item) => (
                                 <RedeemableCard 
                                   key={item.id} 
                                   item={item} 

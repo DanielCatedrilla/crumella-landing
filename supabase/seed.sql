@@ -16,8 +16,8 @@ insert into public.loyalty_cards (unique_id, first_name, last_name, phone_number
 
 insert into public.orders (customer, items, total, discount, "finalTotal", "paymentMethod", "proofUrl", "voucherCode", status, "createdAt", tracking_number) values
   ('{"name":"Seed Buyer","phone":"09000000009","email":"seed@example.com","address":"123 Fake St","orderType":"delivery","deliveryFee":50}',
-   '[{"id":1,"name":"Chocolate Chunk Cookie","price":100,"quantity":2,"isRedeemed":false}]',
-   250, 0, 250, 'gcash', 'http://127.0.0.1:54321/storage/v1/object/public/proofs/legacy_proof.png', null, 'Preparing', now() - interval '1 day', 'CRML-SEED1');
+   '[{"id":4,"name":"Chocolate Chunk Cookie","price":300,"quantity":2,"isRedeemed":false}]',
+   650, 0, 650, 'gcash', 'http://127.0.0.1:54321/storage/v1/object/public/proofs/legacy_proof.png', null, 'Preparing', now() - interval '1 day', 'CRML-SEED1');
 
 insert into public.feedbacks (full_name, facebook_name, email, favorite_cookie, final_thoughts, ratings) values
   ('Fake Reviewer', 'fake.fb', 'reviewer@example.com', 'Chocolate Chunk Cookie', 'Yum',

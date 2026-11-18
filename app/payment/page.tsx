@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import VoucherInput from "../../components/VoucherInput";
 import { supabase } from "../../components/supabase";
-import { friendlyError } from "../../components/dbErrors";
+import { friendlyError, errorCode } from "../../components/dbErrors";
 import emailjs from '@emailjs/browser';
 
 export default function PaymentPage() {
@@ -167,6 +167,13 @@ export default function PaymentPage() {
 
         if (placeError || !placed) {
           alert(friendlyError(placeError));
+          // Prices / items / delivery fee changed since this cart was built:
+          // send them back to checkout, which recalculates from the menu.
+          const code = errorCode(placeError);
+          if (code === 'PRICE_CHANGED' || code === 'ITEM_UNAVAILABLE' ||
+              code === 'DELIVERY_CHANGED' || code === 'NO_PIN') {
+            router.push('/checkout');
+          }
           return;
         }
 

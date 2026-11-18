@@ -10,3 +10,5 @@ supabase db reset --local >/dev/null 2>&1 || true
 # Local gateway keeps the old container address after a reset; refresh it.
 docker restart "supabase_kong_$(grep -m1 '^project_id' supabase/config.toml | cut -d'"' -f2)" >/dev/null
 node supabase/tests/lockdown.test.mjs
+echo "--- prices ---"
+node supabase/tests/prices.test.mjs

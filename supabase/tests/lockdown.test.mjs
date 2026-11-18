@@ -95,8 +95,9 @@ const errMsg = (r) => (r.json && (r.json.message || r.json.error)) || "";
 
 const order = (tracking, extra = {}) => ({
   p_customer: { name: "Test Buyer", phone: "09170000000", email: "buyer@example.com",
-    address: "1 Test St", orderType: "delivery", deliveryFee: 50 },
-  p_items: [{ id: 1, name: "Chocolate Chunk Cookie", price: 100, quantity: 2, isRedeemed: false }],
+    address: "1 Test St", orderType: "delivery", deliveryFee: 50,
+    latitude: 10.7819, longitude: 122.5438 },   // at the store: 0 km -> ₱50
+  p_items: [{ id: 4, name: "Chocolate Chunk Cookie", price: 300, quantity: 2, isRedeemed: false }],
   p_tracking_number: tracking,
   p_payment_method: "cash",
   ...extra,
@@ -194,9 +195,9 @@ const order = (tracking, extra = {}) => ({
     p_payment_method: "gcash", p_proof_path: "orders/test_proof_1.png",
     p_voucher_code: "TEST10", p_rewards_id: "900001" }));
   check("Checkout: GCash order with proof + voucher + points succeeds", r1.status === 200 && r1.json?.tracking_number === "CRML-TST01", `${r1.status} ${errMsg(r1)}`);
-  // 2 x 100 + 50 delivery = 250; 10% = 25; final 225; points floor(225/20) = 11
-  check("Checkout: server computed totals (250 - 25 = 225)", Number(r1.json?.final_total) === 225 && Number(r1.json?.discount) === 25, JSON.stringify(r1.json));
-  check("Checkout: points earned = 11", r1.json?.points_earned === 11 && Number(scalar("select points from loyalty_cards where unique_id='900001'")) === 511);
+  // 2 x 300 + 50 delivery = 650; 10% = 65; final 585; points floor(585/20) = 29
+  check("Checkout: server computed totals (650 - 65 = 585)", Number(r1.json?.final_total) === 585 && Number(r1.json?.discount) === 65, JSON.stringify(r1.json));
+  check("Checkout: points earned = 29", r1.json?.points_earned === 29 && Number(scalar("select points from loyalty_cards where unique_id='900001'")) === 529);
   check("Checkout: voucher use counted once", Number(scalar("select used_count from vouchers where code='TEST10'")) === usedBefore + 1);
   check("Checkout: proof stored as private path", scalar("select \"proofUrl\" from orders where tracking_number='CRML-TST01'") === "orders/test_proof_1.png");
 
@@ -206,7 +207,7 @@ const order = (tracking, extra = {}) => ({
   check("Double-tap / retry: no duplicate order", r2.json?.duplicate === true && Number(scalar("select count(*) from orders where tracking_number='CRML-TST01'")) === 1);
   check("Double-tap / retry: voucher + points not counted twice",
     Number(scalar("select used_count from vouchers where code='TEST10'")) === usedBefore + 1 &&
-    Number(scalar("select points from loyalty_cards where unique_id='900001'")) === 511);
+    Number(scalar("select points from loyalty_cards where unique_id='900001'")) === 529);
 
   const r3 = await rpc("place_order", order("CRML-TST01", { p_customer: { name: "Other", phone: "0999", orderType: "pickup", deliveryFee: 0 } }));
   check("Same tracking number, different customer: rejected", /TRACKING_TAKEN/.test(errMsg(r3)), errMsg(r3));
@@ -224,8 +225,8 @@ const order = (tracking, extra = {}) => ({
   const redeem = order("CRML-TST04", { p_redemption_card: "900001", p_rewards_id: "900001" });
   redeem.p_items.push({ id: 100, name: "Free Chocolate Chunk Cookie", price: 0, quantity: 1, isRedeemed: true });
   const r6 = await rpc("place_order", redeem);
-  // 511 - 75 = 436, then earns floor(250/20)=12 -> 448
-  check("Reward redemption: 75 points deducted by server", r6.status === 200 && Number(scalar("select points from loyalty_cards where unique_id='900001'")) === 448, `${r6.status} ${errMsg(r6)} pts=${scalar("select points from loyalty_cards where unique_id='900001'")}`);
+  // 529 - 75 = 454, then earns floor(650/20)=32 -> 486
+  check("Reward redemption: 75 points deducted by server", r6.status === 200 && Number(scalar("select points from loyalty_cards where unique_id='900001'")) === 486, `${r6.status} ${errMsg(r6)} pts=${scalar("select points from loyalty_cards where unique_id='900001'")}`);
 
   const usedBefore2 = Number(scalar("select used_count from vouchers where code='TEST10'"));
   const poor = order("CRML-TST05", { p_redemption_card: "900004", p_voucher_code: "TEST10" });
@@ -247,7 +248,7 @@ const order = (tracking, extra = {}) => ({
   const neg = order("CRML-TST08");
   neg.p_items[0].price = -500;
   const r10 = await rpc("place_order", neg);
-  check("Negative price: rejected", /BAD_ITEMS/.test(errMsg(r10)), errMsg(r10));
+  check("Negative price: rejected", /PRICE_CHANGED|BAD_ITEMS/.test(errMsg(r10)), errMsg(r10));
 
   const exp = order("CRML-TST09", { p_rewards_id: "900003" });
   const r11 = await rpc("place_order", exp);
