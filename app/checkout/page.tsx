@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { ORDER_ITEMS } from "../../components/Menu";
+import { useLivePrices } from "../../components/livePrices";
 
 const LocationPicker = dynamic(() => import('../../components/LocationPicker'), { 
   ssr: false,
@@ -26,6 +27,7 @@ const generateTrackingCode = () => {
 };
 
 export default function CheckoutPage() {
+  useLivePrices(true); // always the latest prices before building the order
   const [cart, setCart] = useState<{ [key: number]: number } | null>(null);
   const [redeemedItems, setRedeemedItems] = useState<any[]>([]);
   const [formData, setFormData] = useState({

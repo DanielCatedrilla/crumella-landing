@@ -306,7 +306,8 @@ export default function AdminPage() {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    // This browser only: a global sign-out would also disconnect the Hub and the Ops app.
+    await supabase.auth.signOut({ scope: "local" });
     setPassword("");
   };
 

@@ -3,6 +3,7 @@ import { useState, useEffect, Suspense, startTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ORDER_ITEMS } from "../../components/Menu";
+import { useLivePrices } from "../../components/livePrices";
 
 const toSlug = (name: string) =>
   name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -12,6 +13,7 @@ import CartSidePanel from "../../components/CartSidePanel";
 import Navbar from "../../components/Navbar";
 
 function OrderContent() {
+  useLivePrices(); // prices set by the Business Hub
   // State to track quantities for each cookie (by ID)
   const [cart, setCart] = useState<{ [key: number]: number }>({});
   const [isCartLoaded, setIsCartLoaded] = useState(false);

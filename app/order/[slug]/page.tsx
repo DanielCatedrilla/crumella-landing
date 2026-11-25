@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ORDER_ITEMS, MENU_ITEMS } from "../../../components/Menu";
+import { useLivePrices } from "../../../components/livePrices";
 import Navbar from "../../../components/Navbar";
 import CartSidePanel from "../../../components/CartSidePanel";
 import { BsCart } from "react-icons/bs";
@@ -52,6 +53,7 @@ const getTagIcon = (tag: string) => {
 
 export default function CookieDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
+  useLivePrices(); // prices set by the Business Hub
   const router = useRouter();
   const item = ORDER_ITEMS.find(i => toSlug(i.name) === slug);
   const itemId = item?.id ?? -1;
